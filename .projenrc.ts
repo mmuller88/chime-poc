@@ -36,12 +36,12 @@ project.setScript(
 
 project.setScript(
   'deploy',
-  'yarn install-all && cd backend && yarn deploy:no-approval && cd ../frontend && yarn deploy',
+  'yarn install-all && cd frontend && yarn build && cd ../backend && yarn deploy:no-approval ',
 );
 
 project.setScript(
   'dev',
-  'curl https://d3oyzoc11xndeg.cloudfront.net/runtime-config.json > frontend/public/runtime-config.json && react-scripts start',
+  'curl https://d3oyzoc11xndeg.cloudfront.net/runtime-config.json > frontend/public/runtime-config.json && cd frontend && yarn start',
 );
 
 project.setScript('destroy', 'cd backend && destroy');
@@ -75,10 +75,7 @@ backend.setScript('cdk', 'cdk');
 backend.setScript('tsc', 'tsc');
 backend.setScript('destroy', 'cdk destroy');
 backend.setScript('postinstall', 'cd lambda && yarn install');
-backend.setScript(
-  'deploy:no-approval',
-  'cdk deploy --outputs-file ../frontend/src/config.json --require-approval never',
-);
+backend.setScript('deploy:no-approval', 'cdk deploy --require-approval never');
 
 backend.setScript('buildReactApps', 'cd ../frontend && yarn build');
 
