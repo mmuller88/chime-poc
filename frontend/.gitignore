@@ -28,3 +28,5 @@ yarn-error.log*
 # Parcel generates "dist" when used to run the app locally like webpack dev server.
 dist
 widget-dist
+
+public/runtime-config.json

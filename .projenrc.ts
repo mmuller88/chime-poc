@@ -39,6 +39,11 @@ project.setScript(
   'yarn install-all && cd backend && yarn deploy:no-approval && cd ../frontend && yarn deploy',
 );
 
+project.setScript(
+  'dev',
+  'curl https://d3oyzoc11xndeg.cloudfront.net/runtime-config.json > frontend/public/runtime-config.json && react-scripts start',
+);
+
 project.setScript('destroy', 'cd backend && destroy');
 
 project.package.addField('lint-staged', {

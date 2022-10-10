@@ -2,8 +2,8 @@ import * as cdk from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 
 import { Appointment } from './appointment';
-import { Distribution } from './distribution';
 import { Cognito } from './cognito';
+import { Distribution } from './distribution';
 import { Meeting } from './meeting';
 import { Messaging } from './messaging';
 import { Notification } from './notification';
@@ -22,7 +22,6 @@ export class CdkStack extends cdk.Stack {
       createMeetingFunctionArn: meeting.createMeetingFunctionArn,
       createAttendeeFunctionArn: meeting.createAttendeeFunctionArn,
     });
-    const distribution = new Distribution(this, 'Distribution');
     const notification = new Notification(this, 'Notification', {
       appInstanceArn: messaging.appInstanceArn,
       appInstanceAdminArn: messaging.appInstanceAdminArn,
@@ -50,9 +49,9 @@ export class CdkStack extends cdk.Stack {
       CreateAttendeeFunctionArn: meeting.createAttendeeFunctionArn,
       CreateMeetingFunctionArn: meeting.createMeetingFunctionArn,
       DeleteAppointmentFunctionArn: appointment.deleteAppointmentFunctionArn,
-      DistributionBucketName: distribution.bucketName,
-      DistributionId: distribution.id,
-      DistributionUrl: distribution.url,
+      // DistributionBucketName: distribution.bucketName,
+      // DistributionId: distribution.id,
+      // DistributionUrl: distribution.url,
       DoctorUserPoolGroupName: cognito.doctorUserPoolGroupName,
       MakeOutboundCallFunctionArn: pstn.makeOutboundCallFunctionArn,
       PatientUserPoolGroupName: cognito.patientUserPoolGroupName,
@@ -60,6 +59,25 @@ export class CdkStack extends cdk.Stack {
       StateMachineArn: notification.stateMachineArn,
     };
     for (const [key, value] of Object.entries(output)) {
+      new cdk.CfnOutput(this, key, { value });
+    }
+
+    const distribution = new Distribution(this, 'Distribution', {
+      runtimeOptions: {
+        jsonPayload: {
+          stack: {
+            ...output,
+          },
+        },
+      },
+    });
+
+    const output2 = {
+      DistributionBucketName: distribution.bucketName,
+      DistributionId: distribution.id,
+      DistributionUrl: distribution.url,
+    };
+    for (const [key, value] of Object.entries(output2)) {
       new cdk.CfnOutput(this, key, { value });
     }
   }
