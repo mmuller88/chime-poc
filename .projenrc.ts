@@ -1,12 +1,80 @@
-import { typescript } from 'projen';
-const project = new typescript.TypeScriptProject({
-  defaultReleaseBranch: 'main',
-  name: 'chime-poc',
-  projenrcTs: true,
+import * as pj from 'projen';
+import { TrailingComma } from 'projen/lib/javascript';
 
-  // deps: [],                /* Runtime dependencies of this module. */
-  // description: undefined,  /* The description is just a string that helps people understand the purpose of the package. */
-  // devDeps: [],             /* Build dependencies for this module. */
-  // packageName: undefined,  /* The "name" in package.json. */
+/**
+ * The following are some better comments helper (https://marketplace.visualstudio.com/items?itemName=aaron-bond.better-comments)
+ * * That is so important
+ * ! Deprecated stuff
+ * ? being used as a question
+ * TODO: aha
+ * @param myParam The parameter for this method
+ */
+const project = new pj.typescript.TypeScriptProject({
+  defaultReleaseBranch: 'main',
+  name: 'senjuns',
+  projenrcTs: true,
+  eslint: true,
+  prettier: true,
+  prettierOptions: {
+    settings: {
+      singleQuote: true,
+      trailingComma: TrailingComma.ALL,
+    },
+  },
+  devDeps: ['lint-staged'],
+  // release: true,
 });
+project.prettier?.addIgnorePattern('.eslintrc.json');
+project.prettier?.addIgnorePattern('tsconfig.dev.json');
+project.prettier?.addIgnorePattern('tsconfig.json');
+project.prettier?.addIgnorePattern('backend/cdk.json');
+
+project.setScript(
+  'install-all',
+  'cd backend && yarn install && cd ../frontend && yarn install',
+);
+
+project.setScript(
+  'deploy',
+  'yarn install-all && cd backend && yarn deploy:no-approval && cd ../frontend && yarn deploy',
+);
+
+project.setScript('destroy', 'cd backend && destroy');
+
+project.package.addField('lint-staged', {
+  '*.(ts|tsx)': ['eslint --fix'],
+  '*.(ts|tsx|js|jsx|json)': ['prettier --write'],
+});
+project.setScript('lint:staged', 'lint-staged');
+
+project.tsconfigDev?.addInclude('backend/**/*.ts');
+
 project.synth();
+
+const cdkVersion = '2.45.0';
+const backend = new pj.awscdk.AwsCdkTypeScriptApp({
+  defaultReleaseBranch: 'main',
+  outdir: 'backend',
+  parent: project,
+  name: 'backend',
+  cdkVersion,
+  // release: true,
+  tsconfig: {
+    compilerOptions: {
+      skipLibCheck: true,
+    },
+  },
+});
+
+backend.setScript('cdk', 'cdk');
+backend.setScript('tsc', 'tsc');
+backend.setScript('destroy', 'cdk destroy');
+backend.setScript('postinstall', 'cd lambda && yarn install');
+backend.setScript(
+  'deploy:no-approval',
+  'cdk deploy --outputs-file ../frontend/src/config.json --require-approval never',
+);
+
+backend.setScript('buildReactApps', 'cd ../frontend && yarn build');
+
+backend.synth();

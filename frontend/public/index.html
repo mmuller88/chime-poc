@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>Amazon Chime SDK Widget Demo</title>
+    <meta charset="utf-8" />
+    <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#000000" />
+    <meta name="description" content="Amazon Chime SDK Widget Demo" />
+    <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
+    <!-- Embed the CSS for widget from CloudFront -->
+    <link href="https://d3oyzoc11xndeg.cloudfront.net/index.css" rel="stylesheet" />
+    <script>
+      window.addEventListener('load', () => {
+        window.initAmazonChimeSDKWidget();
+      });
+    </script>
+  </head>
+  <body style="background-color: #efefef;">
+    <!-- Embed the JS script for widget from CloudFront -->
+    <script src="https://d3oyzoc11xndeg.cloudfront.net/index.js"></script>
+  </body>
+</html>
