@@ -1,19 +1,20 @@
-import React, { ReactNode, useContext, useEffect, useState } from 'react';
-import { useAuthenticator } from '@aws-amplify/ui-react';
 import { Auth } from '@aws-amplify/auth';
 import { ICredentials } from '@aws-amplify/core';
+import { useAuthenticator } from '@aws-amplify/ui-react';
 import { Provider } from '@aws-sdk/types';
+import { Amplify } from 'aws-amplify';
+import React, { ReactNode, useContext, useEffect, useState } from 'react';
 
-import Config from '../utils/Config';
 import SignInSignUp from '../components/SignInSignUp';
 import { AccountType } from '../constants';
+import Config from '../utils/Config';
 
 interface AuthValue {
   accountType: AccountType;
   appInstanceUserArn: string;
   // TODO: Remove "credentials" when removing AWS SDK v2 dependency in MessagingProvider.
   credentials: ICredentials;
-  getIdToken: Provider<string>,
+  getIdToken: Provider<string>;
   signOut: (data?: Record<string | number | symbol, any>) => void;
   user: ReturnType<typeof useAuthenticator>['user'];
 }
@@ -28,25 +29,45 @@ export function useAuth(): AuthValue {
   return value;
 }
 
-export default function AuthProvider({ children }: { children: ReactNode }): JSX.Element {
-  const { route, user, signOut } = useAuthenticator((context) => [context.route]);
+export default function AuthProvider({
+  children,
+}: {
+  children: ReactNode;
+}): JSX.Element {
+  const { route, user, signOut } = useAuthenticator((context) => [
+    context.route,
+  ]);
   const [credentials, setCredentials] = useState<{
-    credentials: ICredentials,
-    getIdToken: Provider<string>,
+    credentials: ICredentials;
+    getIdToken: Provider<string>;
   }>();
+
+  useEffect(() => {
+    Amplify.configure({
+      Auth: {
+        identityPoolId: Config.CognitoIdentityPoolId,
+        region: Config.Region,
+        identityPoolRegion: Config.Region,
+        userPoolId: Config.CognitoUserPoolId,
+        userPoolWebClientId: Config.CognitoUserPoolClientId,
+      },
+    });
+  }, []);
 
   useEffect(() => {
     if (route === 'authenticated') {
       (async () => {
         setCredentials({
-          credentials: Auth.essentialCredentials(await Auth.currentCredentials()),
+          credentials: Auth.essentialCredentials(
+            await Auth.currentCredentials(),
+          ),
           getIdToken: async (): Promise<string> => {
             return (await Auth.currentSession()).getIdToken().getJwtToken();
           },
         });
       })();
     } else if (route === 'signOut') {
-      setCredentials(undefined); 
+      setCredentials(undefined);
     }
   }, [route]);
 
@@ -59,7 +80,9 @@ export default function AuthProvider({ children }: { children: ReactNode }): JSX
       signOut,
       user,
     };
-    return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+    return (
+      <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
+    );
   } else {
     return <SignInSignUp />;
   }
