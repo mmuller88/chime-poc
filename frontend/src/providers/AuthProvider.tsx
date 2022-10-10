@@ -7,7 +7,7 @@ import React, { ReactNode, useContext, useEffect, useState } from 'react';
 
 import SignInSignUp from '../components/SignInSignUp';
 import { AccountType } from '../constants';
-import Config from '../utils/Config';
+import { useRuntime } from './RuntimeProvider';
 
 interface AuthValue {
   accountType: AccountType;
@@ -42,14 +42,22 @@ export default function AuthProvider({
     getIdToken: Provider<string>;
   }>();
 
+  const {
+    region,
+    cognitoUserPoolId,
+    cognitoUserPoolClientId,
+    cognitoIdentityPoolId,
+    appInstanceArn,
+  } = useRuntime();
+
   useEffect(() => {
     Amplify.configure({
       Auth: {
-        identityPoolId: Config.CognitoIdentityPoolId,
-        region: Config.Region,
-        identityPoolRegion: Config.Region,
-        userPoolId: Config.CognitoUserPoolId,
-        userPoolWebClientId: Config.CognitoUserPoolClientId,
+        identityPoolId: cognitoIdentityPoolId, // Config.CognitoIdentityPoolId,
+        region: region, // Config.Region,
+        identityPoolRegion: region, // Config.Region,
+        userPoolId: cognitoUserPoolId, // Config.CognitoUserPoolId,
+        userPoolWebClientId: cognitoUserPoolClientId, // Config.CognitoUserPoolClientId,
       },
     });
   }, []);
@@ -74,7 +82,7 @@ export default function AuthProvider({
   if (route === 'authenticated' && credentials) {
     const value: AuthValue = {
       accountType: user.attributes?.['custom:accountType'] as AccountType,
-      appInstanceUserArn: `${Config.AppInstanceArn}/user/${user.username}`,
+      appInstanceUserArn: `${appInstanceArn}/user/${user.username}`,
       credentials: credentials.credentials,
       getIdToken: credentials.getIdToken,
       signOut,

@@ -20,6 +20,9 @@ function App() {
   return (
     <Authenticator.Provider>
       <Widget>
+        {/*
+         * RuntimeProvider fetches AWS resources from runtime-config.json in public folder
+         */}
         <RuntimeProvider>
           <AuthProvider>
             {/*

@@ -5,6 +5,13 @@ interface RuntimeValue {
   appInstanceArn: string;
   cognitoUserPoolId: string;
   cognitoUserPoolClientId: string;
+  cognitoIdentityPoolId: string;
+  createAttendeeFunctionArn: string;
+  createMeetingFunctionArn: string;
+  deleteAppointmentFunctionArn: string;
+  makeOutboundCallFunctionArn: string;
+  patientUserPoolGroupName: string;
+  createAppointmentFunctionArn: string;
 }
 
 const RuntimeContext = React.createContext<RuntimeValue | undefined>(undefined);
@@ -35,13 +42,19 @@ export default function RuntimeProvider({
           cleanRuntimeContext.Region &&
           cleanRuntimeContext.AppInstanceArn &&
           cleanRuntimeContext.CognitoUserPoolId &&
-          cleanRuntimeContext.CognitoUserPoolClientId
+          cleanRuntimeContext.CognitoUserPoolClientId &&
+          cleanRuntimeContext.CognitoIdentityPoolId &&
+          cleanRuntimeContext.AppInstanceArn &&
+          cleanRuntimeContext.CreateAttendeeFunctionArn &&
+          cleanRuntimeContext.CreateMeetingFunctionArn &&
+          cleanRuntimeContext.DeleteAppointmentFunctionArn &&
+          cleanRuntimeContext.MakeOutboundCallFunctionArn &&
+          cleanRuntimeContext.PatientUserPoolGroupName &&
+          cleanRuntimeContext.CreateAppointmentFunctionArn
         ) {
           setRuntimeContext(cleanRuntimeContext);
         } else {
-          console.warn(
-            'runtime-config.json should have Region, AppInstanceArn, CognitoUserPoolId, CognitoUserPoolClientId.',
-          );
+          console.warn('runtime-config.json misses property');
         }
       })
       .catch(() => {
@@ -56,6 +69,13 @@ export default function RuntimeProvider({
       appInstanceArn: runtimeContext.AppInstanceArn,
       cognitoUserPoolId: runtimeContext.CognitoUserPoolId,
       cognitoUserPoolClientId: runtimeContext.CognitoUserPoolClientId,
+      cognitoIdentityPoolId: runtimeContext.CognitoIdentityPoolId,
+      createAttendeeFunctionArn: runtimeContext.CreateAttendeeFunctionArn,
+      createMeetingFunctionArn: runtimeContext.CreateMeetingFunctionArn,
+      deleteAppointmentFunctionArn: runtimeContext.DeleteAppointmentFunctionArn,
+      makeOutboundCallFunctionArn: runtimeContext.MakeOutboundCallFunctionArn,
+      patientUserPoolGroupName: runtimeContext.PatientUserPoolGroupName,
+      createAppointmentFunctionArn: runtimeContext.CreateAppointmentFunctionArn,
     };
     return (
       <RuntimeContext.Provider value={value}>

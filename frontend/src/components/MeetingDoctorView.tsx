@@ -1,26 +1,27 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { Message, MessagingSessionObserver } from 'amazon-chime-sdk-js';
-import { MeetingProvider } from 'amazon-chime-sdk-component-library-react';
 import {
   ChannelMessagePersistenceType,
   ChannelMessageType,
   SendChannelMessageCommand,
 } from '@aws-sdk/client-chime-sdk-messaging';
 import { InvocationType, InvokeCommand, LogType } from '@aws-sdk/client-lambda';
-import { useTranslation, Trans } from 'react-i18next';
+import { MeetingProvider } from 'amazon-chime-sdk-component-library-react';
+import { Message, MessagingSessionObserver } from 'amazon-chime-sdk-js';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { Trans, useTranslation } from 'react-i18next';
 
-import './MeetingDoctorView.css';
+import { MeetingInviteStatus, ReservedMessageContent } from '../constants';
+import useMeetingFunctions from '../hooks/useMeetingFunctions';
+import useMountedRef from '../hooks/useMountedRef';
+import { useAuth } from '../providers/AuthProvider';
 import { useAwsClient } from '../providers/AwsClientProvider';
 import { useMessaging } from '../providers/MessagingProvider';
-import { useAuth } from '../providers/AuthProvider';
-import useMountedRef from '../hooks/useMountedRef';
-import useMeetingFunctions from '../hooks/useMeetingFunctions';
-import { ReservedMessageContent, MeetingInviteStatus } from '../constants';
+import { useRuntime } from '../providers/RuntimeProvider';
 import { Channel, MeetingAPIResponse, MessageMetadata } from '../types';
 import { MakeOutboundCallFunctionEvent } from '../types/lambda';
+import './MeetingDoctorView.css';
 import MeetingWidget from './MeetingWidget';
 import Window from './Window';
-import Config from '../utils/Config';
+// import Config from '../utils/Config';
 
 interface Props {
   channel: Channel;
@@ -29,14 +30,18 @@ interface Props {
 
 export default function MeetingDoctorView({ channel, onCleanUp }: Props) {
   const channelArn = channel.summary.ChannelArn;
+  const { makeOutboundCallFunctionArn } = useRuntime();
   const { lambdaClient, messagingClient } = useAwsClient();
   const { appInstanceUserArn, user } = useAuth();
   const { messagingSession, clientId } = useMessaging();
   const mountedRef = useMountedRef();
   const { createMeeting } = useMeetingFunctions();
   const [joinInfo, setJoinInfo] = useState<MeetingAPIResponse>();
-  const [meetingInviteStatus, setMeetingInviteStatus] = useState(MeetingInviteStatus.Unknown);
-  const meetingInviteStatusRef = useRef<MeetingInviteStatus>(meetingInviteStatus);
+  const [meetingInviteStatus, setMeetingInviteStatus] = useState(
+    MeetingInviteStatus.Unknown,
+  );
+  const meetingInviteStatusRef =
+    useRef<MeetingInviteStatus>(meetingInviteStatus);
   const timeoudRef = useRef<ReturnType<typeof setTimeout>>();
   const { t } = useTranslation();
   const [called, setCalled] = useState<boolean>(false);
@@ -67,7 +72,7 @@ export default function MeetingDoctorView({ channel, onCleanUp }: Props) {
           } catch (error: any) {
             console.warn(
               `MeetingDoctorView::messagingSessionDidReceiveMessage::Failed to decode the message content`,
-              error
+              error,
             );
           }
         }
@@ -77,7 +82,13 @@ export default function MeetingDoctorView({ channel, onCleanUp }: Props) {
     return () => {
       messagingSession?.removeObserver(observer);
     };
-  }, [channelArn, joinInfo, messagingSession, user.username, channel.patient.username]);
+  }, [
+    channelArn,
+    joinInfo,
+    messagingSession,
+    user.username,
+    channel.patient.username,
+  ]);
 
   useEffect(() => {
     if (meetingInviteStatus === MeetingInviteStatus.Declined) {
@@ -89,12 +100,17 @@ export default function MeetingDoctorView({ channel, onCleanUp }: Props) {
     return () => {
       // We must use "meetingInviteStatusRef.current" to send the cancel message only when
       // the status is unknown during unmounting.
-      if (joinInfo && meetingInviteStatusRef.current === MeetingInviteStatus.Unknown) {
+      if (
+        joinInfo &&
+        meetingInviteStatusRef.current === MeetingInviteStatus.Unknown
+      ) {
         try {
           messagingClient.send(
             new SendChannelMessageCommand({
               ChannelArn: channelArn,
-              Content: encodeURIComponent(ReservedMessageContent.CanceledInvite),
+              Content: encodeURIComponent(
+                ReservedMessageContent.CanceledInvite,
+              ),
               ChimeBearer: appInstanceUserArn,
               Type: ChannelMessageType.STANDARD,
               Persistence: ChannelMessagePersistenceType.NON_PERSISTENT,
@@ -105,14 +121,21 @@ export default function MeetingDoctorView({ channel, onCleanUp }: Props) {
                 meetingId: joinInfo.Meeting.MeetingId,
                 meetingInviteStatus: MeetingInviteStatus.Cancel,
               } as MessageMetadata),
-            })
+            }),
           );
         } catch (error: any) {
           console.error(error);
         }
       }
     };
-  }, [appInstanceUserArn, channelArn, clientId, joinInfo, messagingClient, onCleanUp]);
+  }, [
+    appInstanceUserArn,
+    channelArn,
+    clientId,
+    joinInfo,
+    messagingClient,
+    onCleanUp,
+  ]);
 
   useEffect(() => {
     if (
@@ -150,13 +173,16 @@ export default function MeetingDoctorView({ channel, onCleanUp }: Props) {
                 meetingId: response.Meeting.MeetingId,
                 meetingInviteStatus: MeetingInviteStatus.Unknown,
               } as MessageMetadata),
-            })
+            }),
           );
         } catch (error: any) {
           console.error(error);
         }
 
-        if (mountedRef.current && meetingInviteStatusRef.current === MeetingInviteStatus.Unknown) {
+        if (
+          mountedRef.current &&
+          meetingInviteStatusRef.current === MeetingInviteStatus.Unknown
+        ) {
           timeoudRef.current = setTimeout(sendRequest, 1000);
         }
       })();
@@ -186,7 +212,7 @@ export default function MeetingDoctorView({ channel, onCleanUp }: Props) {
       try {
         await lambdaClient.send(
           new InvokeCommand({
-            FunctionName: Config.MakeOutboundCallFunctionArn,
+            FunctionName: makeOutboundCallFunctionArn,
             InvocationType: InvocationType.RequestResponse,
             LogType: LogType.None,
             Payload: new TextEncoder().encode(
@@ -196,24 +222,36 @@ export default function MeetingDoctorView({ channel, onCleanUp }: Props) {
                 doctorUsername: channel.doctor.username,
                 patientUsername: channel.patient.username,
                 meetingId: joinInfo.Meeting.MeetingId,
-              } as MakeOutboundCallFunctionEvent)
+              } as MakeOutboundCallFunctionEvent),
             ),
-          })
+          }),
         );
       } catch (error: any) {
         console.error(error);
       }
     }
-  }, [channel.doctor.username, channel.patient.username, channelArn, clientId, joinInfo, lambdaClient, setCalled]);
+  }, [
+    channel.doctor.username,
+    channel.patient.username,
+    channelArn,
+    clientId,
+    joinInfo,
+    lambdaClient,
+    setCalled,
+  ]);
 
   const onClickCancel = useCallback(() => {
     onCleanUp();
   }, [onCleanUp]);
 
   return (
-    <Window className="MeetingDoctorView__window" isPortal title={t('MeetingDoctorView.title', {
-      name: channel.patient.name,
-    })}>
+    <Window
+      className="MeetingDoctorView__window"
+      isPortal
+      title={t('MeetingDoctorView.title', {
+        name: channel.patient.name,
+      })}
+    >
       <div className="MeetingDoctorView">
         {meetingInviteStatus === MeetingInviteStatus.Declined && (
           <div className="MeetingDoctorView__progressUpdateContainer">
@@ -228,7 +266,10 @@ export default function MeetingDoctorView({ channel, onCleanUp }: Props) {
           <div className="MeetingDoctorView__progressUpdateContainer">
             <div className="MeetingDoctorView__waitingContainer">
               <p className="MeetingDoctorView__waiting">
-                <Trans i18nKey={'MeetingDoctorView.waiting'} values={{ name: channel.patient.name }} />
+                <Trans
+                  i18nKey={'MeetingDoctorView.waiting'}
+                  values={{ name: channel.patient.name }}
+                />
               </p>
               <button
                 type="submit"
@@ -239,13 +280,17 @@ export default function MeetingDoctorView({ channel, onCleanUp }: Props) {
                 {'Cancel'}
               </button>
             </div>
-            <p className="MeetingDoctorView__phoneCallDescription">{t('MeetingDoctorView.phoneCallDescription')}</p>
+            <p className="MeetingDoctorView__phoneCallDescription">
+              {t('MeetingDoctorView.phoneCallDescription')}
+            </p>
             <button
               className="MeetingDoctorView__phoneCallButton"
               onClick={onClickPhoneCall}
               disabled={!joinInfo || called}
             >
-              {called ? t('MeetingDoctorView.calling') : t('MeetingDoctorView.phoneCall')}
+              {called
+                ? t('MeetingDoctorView.calling')
+                : t('MeetingDoctorView.phoneCall')}
             </button>
           </div>
         )}

@@ -1,31 +1,41 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { Message, MessagingSessionObserver } from 'amazon-chime-sdk-js';
 import {
   ChannelMessagePersistenceType,
   ChannelMessageType,
   SendChannelMessageCommand,
 } from '@aws-sdk/client-chime-sdk-messaging';
-import { InvokeCommand, InvocationType, LogType } from '@aws-sdk/client-lambda';
-import { PopOver, PopOverHeader, PopOverItem } from 'amazon-chime-sdk-component-library-react';
+import { InvocationType, InvokeCommand, LogType } from '@aws-sdk/client-lambda';
+import {
+  PopOver,
+  PopOverHeader,
+  PopOverItem,
+} from 'amazon-chime-sdk-component-library-react';
+import { Message, MessagingSessionObserver } from 'amazon-chime-sdk-js';
+import classnames from 'classnames';
 import dayjs from 'dayjs';
 import calendar from 'dayjs/plugin/calendar';
 import localizedFormat from 'dayjs/plugin/localizedFormat';
-import classnames from 'classnames';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import './AppointmentView.css';
-import { useAwsClient } from '../providers/AwsClientProvider';
+import {
+  AccountType,
+  MeetingInviteStatus,
+  Presence,
+  ReservedMessageContent,
+} from '../constants';
+import useInterval from '../hooks/useInterval';
 import { useAuth } from '../providers/AuthProvider';
+import { useAwsClient } from '../providers/AwsClientProvider';
 import { useMessaging } from '../providers/MessagingProvider';
 import { useRoute } from '../providers/RouteProvider';
-import useInterval from '../hooks/useInterval';
-import { MessageMetadata, Channel } from '../types';
+import { useRuntime } from '../providers/RuntimeProvider';
+import { Channel, MessageMetadata } from '../types';
 import { DeleteAppointmentFunctionEvent } from '../types/lambda';
-import { AccountType, Presence, ReservedMessageContent, MeetingInviteStatus } from '../constants';
+import './AppointmentView.css';
 import Chat from './Chat';
 import MeetingDoctorView from './MeetingDoctorView';
 import MeetingPatientView from './MeetingPatientView';
-import Config from '../utils/Config';
+// import Config from '../utils/Config';
 
 dayjs.extend(calendar);
 dayjs.extend(localizedFormat);
@@ -35,6 +45,7 @@ const PING_INTERVAL = 3000; // 3 seconds.
 
 export default function AppointmentView(): JSX.Element {
   const { params, setRoute } = useRoute();
+  const { deleteAppointmentFunctionArn } = useRuntime();
   const { appInstanceUserArn, user, accountType } = useAuth();
   const { messagingClient, lambdaClient } = useAwsClient();
   const { clientId, messagingSession } = useMessaging();
@@ -86,14 +97,21 @@ export default function AppointmentView(): JSX.Element {
                 metadata.meetingId &&
                 !cleanedUpMeetingIdsRef.current.has(metadata.meetingId)
               ) {
-                if (metadata.meetingInviteStatus === MeetingInviteStatus.Unknown) {
+                if (
+                  metadata.meetingInviteStatus === MeetingInviteStatus.Unknown
+                ) {
                   setMeetingId(metadata.meetingId);
-                } else if (metadata.meetingInviteStatus === MeetingInviteStatus.Cancel) {
+                } else if (
+                  metadata.meetingInviteStatus === MeetingInviteStatus.Cancel
+                ) {
                   setMeetingId(undefined);
                 }
               }
             } catch (error: any) {
-              console.warn(`AppointmentView::messagingSessionDidReceiveMessage::Failed to decode the message`, error);
+              console.warn(
+                `AppointmentView::messagingSessionDidReceiveMessage::Failed to decode the message`,
+                error,
+              );
             }
           } else if (message.type === 'DELETE_CHANNEL') {
             const payload = JSON.parse(message.payload);
@@ -136,7 +154,7 @@ export default function AppointmentView(): JSX.Element {
               presence: Presence.CheckedIn,
               clientId,
             } as MessageMetadata),
-          })
+          }),
         );
       } catch (error: any) {
         console.error(error);
@@ -155,7 +173,7 @@ export default function AppointmentView(): JSX.Element {
           ChimeBearer: appInstanceUserArn,
           Type: ChannelMessageType.CONTROL,
           Persistence: ChannelMessagePersistenceType.NON_PERSISTENT,
-        })
+        }),
       );
     } catch (error: any) {
       console.error(error);
@@ -168,12 +186,15 @@ export default function AppointmentView(): JSX.Element {
       if (!presenceMap.current[channel.patient.username]) {
         return;
       }
-      if (Date.now() - presenceMap.current[channel.patient.username] > PRESENCE_CHECK_THRESHOLD) {
+      if (
+        Date.now() - presenceMap.current[channel.patient.username] >
+        PRESENCE_CHECK_THRESHOLD
+      ) {
         if (isRemoteAttendeePresent) {
           setIsRemoteAttendeePresent(false);
           console.debug(
             'AppointmentView::Presence::Found that the patient as a remote attendee is not present',
-            presenceMap
+            presenceMap,
           );
         }
       } else {
@@ -181,7 +202,7 @@ export default function AppointmentView(): JSX.Element {
           setIsRemoteAttendeePresent(true);
           console.debug(
             'AppointmentView::Presence::Found that the patient as a remote attendee is present',
-            presenceMap
+            presenceMap,
           );
         }
       }
@@ -190,12 +211,15 @@ export default function AppointmentView(): JSX.Element {
       if (!presenceMap.current[channel.doctor.username]) {
         return;
       }
-      if (Date.now() - presenceMap.current[channel.doctor.username] > PRESENCE_CHECK_THRESHOLD) {
+      if (
+        Date.now() - presenceMap.current[channel.doctor.username] >
+        PRESENCE_CHECK_THRESHOLD
+      ) {
         if (isRemoteAttendeePresent) {
           setIsRemoteAttendeePresent(false);
           console.debug(
             'AppointmentView::Presence::Found that the doctor as a remote attendee is not present now',
-            presenceMap
+            presenceMap,
           );
         }
       } else {
@@ -203,7 +227,7 @@ export default function AppointmentView(): JSX.Element {
           setIsRemoteAttendeePresent(true);
           console.debug(
             'AppointmentView::Presence::Found that the doctor as a remote attendee is present now',
-            presenceMap
+            presenceMap,
           );
         }
       }
@@ -224,16 +248,16 @@ export default function AppointmentView(): JSX.Element {
       try {
         await lambdaClient.send(
           new InvokeCommand({
-            FunctionName: Config.DeleteAppointmentFunctionArn,
+            FunctionName: deleteAppointmentFunctionArn,
             InvocationType: InvocationType.RequestResponse,
             LogType: LogType.None,
             Payload: new TextEncoder().encode(
               JSON.stringify({
                 appInstanceUserArn,
                 channelArn,
-              } as DeleteAppointmentFunctionEvent)
+              } as DeleteAppointmentFunctionEvent),
             ),
-          })
+          }),
         );
       } catch (error: any) {
         console.error(error);
@@ -267,9 +291,10 @@ export default function AppointmentView(): JSX.Element {
       })}
     >
       <div className="AppointmentView__menu">
-        <button className="AppointmentView__backButton" onClick={onClickBack}>{`〈 ${t(
-          'AppointmentView.back'
-        )}`}</button>
+        <button
+          className="AppointmentView__backButton"
+          onClick={onClickBack}
+        >{`〈 ${t('AppointmentView.back')}`}</button>
         <div className="AppointmentView__popOverButtonContainer">
           <PopOver
             className="AppointmentView__popOverButton"
@@ -277,12 +302,26 @@ export default function AppointmentView(): JSX.Element {
             renderButton={() => (
               <>
                 <span className="AppointmentView__title">
-                  {accountType === AccountType.Doctor ? channel.patient.name : channel.doctor.name}
+                  {accountType === AccountType.Doctor
+                    ? channel.patient.name
+                    : channel.doctor.name}
                 </span>
                 <span className="AppointmentView__icon">
-                  <svg width="16px" height="16px" viewBox="0 0 20 20" version="1.1" xmlns="http://www.w3.org/2000/svg">
+                  <svg
+                    width="16px"
+                    height="16px"
+                    viewBox="0 0 20 20"
+                    version="1.1"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
                     <title>v</title>
-                    <g id="v" stroke="none" strokeWidth="1" fill="none" fillRule="evenodd">
+                    <g
+                      id="v"
+                      stroke="none"
+                      strokeWidth="1"
+                      fill="none"
+                      fillRule="evenodd"
+                    >
                       <path
                         d="M14.8779913,6.95221415 C15.2559625,6.54952791 15.8888104,6.52949244 16.2914967,6.90746365 C16.663207,7.25636016 16.7088718,7.82242971 16.4164131,8.22417648 L16.3362472,8.32096901 L10.0001925,15.0713296 L3.2348718,8.34577982 C2.84319795,7.95640848 2.84133139,7.32324626 3.23070273,6.9315724 C3.59012243,6.57002731 4.15726927,6.54062571 4.55045798,6.84449281 L4.64491015,6.92740334 L9.95,12.202 L14.8779913,6.95221415 Z"
                         id="Path"
@@ -308,7 +347,11 @@ export default function AppointmentView(): JSX.Element {
               })}
             />
             {accountType === AccountType.Doctor && (
-              <PopOverItem as="button" onClick={onClickDelete} children={<span>{t('AppointmentView.delete')}</span>} />
+              <PopOverItem
+                as="button"
+                onClick={onClickDelete}
+                children={<span>{t('AppointmentView.delete')}</span>}
+              />
             )}
           </PopOver>
         </div>
@@ -321,11 +364,18 @@ export default function AppointmentView(): JSX.Element {
       {checkedIn && (
         <>
           <Chat channel={channel} />
-          {showMeetingDoctorView && <MeetingDoctorView channel={channel} onCleanUp={onCleanUpDoctor} />}
+          {showMeetingDoctorView && (
+            <MeetingDoctorView channel={channel} onCleanUp={onCleanUpDoctor} />
+          )}
           {meetingId && (
             // We must pass the meeting ID as a key because MeetingPatientView does not support the case when
             // only the meeting ID prop changes. Providing a unique key will mount a new copy of MeetingPatientView.
-            <MeetingPatientView key={meetingId} channel={channel} meetingId={meetingId} onCleanUp={onCleanUpPatient} />
+            <MeetingPatientView
+              key={meetingId}
+              channel={channel}
+              meetingId={meetingId}
+              onCleanUp={onCleanUpPatient}
+            />
           )}
         </>
       )}

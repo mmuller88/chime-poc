@@ -1,13 +1,13 @@
-import React, { useContext, ReactNode } from 'react';
-import { ChimeSDKMessagingClient } from '@aws-sdk/client-chime-sdk-messaging';
 import { ChimeSDKIdentityClient } from '@aws-sdk/client-chime-sdk-identity';
+import { ChimeSDKMessagingClient } from '@aws-sdk/client-chime-sdk-messaging';
 import { CognitoIdentityProviderClient } from '@aws-sdk/client-cognito-identity-provider';
 import { LambdaClient } from '@aws-sdk/client-lambda';
-import { fromCognitoIdentityPool } from '@aws-sdk/credential-providers';
 import { SFNClient } from '@aws-sdk/client-sfn';
+import { fromCognitoIdentityPool } from '@aws-sdk/credential-providers';
+import React, { ReactNode, useContext } from 'react';
 
-import Config from '../utils/Config';
 import { useAuth } from './AuthProvider';
+import { useRuntime } from './RuntimeProvider';
 
 interface AwsClientValue {
   cognitoClient: CognitoIdentityProviderClient;
@@ -17,7 +17,9 @@ interface AwsClientValue {
   sfnClient: SFNClient;
 }
 
-const AwsClientContext = React.createContext<AwsClientValue | undefined>(undefined);
+const AwsClientContext = React.createContext<AwsClientValue | undefined>(
+  undefined,
+);
 
 export function useAwsClient(): AwsClientValue {
   const value = useContext(AwsClientContext);
@@ -27,15 +29,21 @@ export function useAwsClient(): AwsClientValue {
   return value;
 }
 
-export default function AwsClientProvider({ children }: { children: ReactNode }) {
+export default function AwsClientProvider({
+  children,
+}: {
+  children: ReactNode;
+}) {
+  const { region, cognitoUserPoolId, cognitoIdentityPoolId } = useRuntime();
   const { getIdToken } = useAuth();
   const parameters = {
-    region: Config.Region,
+    region: region,
     credentials: fromCognitoIdentityPool({
-      clientConfig: { region: Config.Region },
-      identityPoolId: Config.CognitoIdentityPoolId,
+      clientConfig: { region: region },
+      identityPoolId: cognitoIdentityPoolId,
       logins: {
-        [`cognito-idp.${Config.Region}.amazonaws.com/${Config.CognitoUserPoolId}`]: getIdToken,
+        [`cognito-idp.${region}.amazonaws.com/${cognitoUserPoolId}`]:
+          getIdToken,
       },
     }),
   };
@@ -46,5 +54,9 @@ export default function AwsClientProvider({ children }: { children: ReactNode })
     lambdaClient: new LambdaClient(parameters),
     sfnClient: new SFNClient(parameters),
   };
-  return <AwsClientContext.Provider value={value}>{children}</AwsClientContext.Provider>;
+  return (
+    <AwsClientContext.Provider value={value}>
+      {children}
+    </AwsClientContext.Provider>
+  );
 }
