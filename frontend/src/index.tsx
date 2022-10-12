@@ -4,11 +4,16 @@ import App from './App';
 import './index.css';
 import reportWebVitals from './reportWebVitals';
 
+const root = document.getElementById('root');
+const container = document.createElement('div');
+container.id = 'amazon-chime-sdk-widget-container';
+document.body.appendChild(container);
+
 ReactDOM.render(
   <React.StrictMode>
     <App />
   </React.StrictMode>,
-  document.getElementById('root'),
+  root,
 );
 
 // If you want to start measuring performance in your app, pass a function

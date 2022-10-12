@@ -25,7 +25,7 @@
     "cdk": "cdk",
     "tsc": "tsc",
     "postinstall": "cd lambda && yarn install",
-    "deploy:no-approval": "cdk deploy --outputs-file ../frontend/src/config.json --require-approval never",
+    "deploy:no-approval": "cdk deploy --require-approval never",
     "buildReactApps": "cd ../frontend && yarn build"
   },
   "devDependencies": {
