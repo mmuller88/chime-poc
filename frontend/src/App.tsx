@@ -3,6 +3,7 @@ import { Authenticator } from '@aws-amplify/ui-react';
 import AppointmentList from './components/AppointmentList';
 import AppointmentView from './components/AppointmentView';
 import CreateAppointment from './components/CreateAppointment';
+import DirectCall from './components/DirectCall';
 import Widget from './components/Widget';
 import './index.css';
 import './localization';
@@ -19,30 +20,38 @@ import RuntimeProvider from './providers/RuntimeProvider';
 function App() {
   return (
     <Authenticator.Provider>
-      <Widget>
-        {/*
-         * RuntimeProvider fetches AWS resources from runtime-config.json in public folder
-         */}
-        <RuntimeProvider>
-          <AuthProvider>
-            {/*
-             * AuthProvider shows the sign-in page for non-authenticated users and
-             * the following children for authenticated users.
-             */}
-            <AwsClientProvider>
+      <RuntimeProvider>
+        <AuthProvider>
+          <AwsClientProvider>
+            <Widget number={1}>
               <MessagingProvider>
                 <RouteProvider
                   routes={{
                     AppointmentList: <AppointmentList />,
                     AppointmentView: <AppointmentView />,
+                    DirectCall: <DirectCall />,
                     CreateAppointment: <CreateAppointment />,
                   }}
                 />
               </MessagingProvider>
-            </AwsClientProvider>
-          </AuthProvider>
-        </RuntimeProvider>
-      </Widget>
+            </Widget>
+            <Widget number={2}>
+              <MessagingProvider>
+                <RouteProvider
+                  routes={{
+                    AppointmentList: <AppointmentList />,
+                    AppointmentView: <AppointmentView />,
+                    DirectCall: <DirectCall />,
+
+                    CreateAppointment: <CreateAppointment />,
+                  }}
+                  defaultRoute={<DirectCall />}
+                />
+              </MessagingProvider>
+            </Widget>
+          </AwsClientProvider>
+        </AuthProvider>
+      </RuntimeProvider>
     </Authenticator.Provider>
   );
 }

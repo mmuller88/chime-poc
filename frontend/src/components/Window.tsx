@@ -1,10 +1,10 @@
-import { useRef, ReactNode, useMemo } from 'react';
+import classnames from 'classnames';
+import { ReactNode, useMemo, useRef } from 'react';
 import Draggable from 'react-draggable';
 import { v4 as uuidv4 } from 'uuid';
-import classnames from 'classnames';
 
-import './Window.css';
 import { createPortal } from 'react-dom';
+import './Window.css';
 
 export default function Window({
   children,
@@ -12,18 +12,24 @@ export default function Window({
   isPortal = false,
   rightNode,
   title,
+  number = 1,
 }: {
   children: ReactNode;
   className?: string;
   isPortal?: boolean;
   rightNode?: ReactNode;
   title: string;
+  number?: number;
 }): JSX.Element {
   const id = useMemo(() => uuidv4(), []);
   const ref = useRef(null);
 
   const node = (
-    <Draggable nodeRef={ref} handle={`.Window__title--${id}`}>
+    <Draggable
+      position={{ x: (number - 1) * 320, y: 0 }}
+      nodeRef={ref}
+      handle={`.Window__title--${id}`}
+    >
       <div className={classnames('Window', className)} ref={ref}>
         <header className="Window__header">
           <h1 className={`Window__title Window__title--${id}`}>{title}</h1>
@@ -35,7 +41,10 @@ export default function Window({
   );
 
   if (isPortal) {
-    return createPortal(node, document.getElementById('amazon-chime-sdk-widget-container') as Element);
+    return createPortal(
+      node,
+      document.getElementById('amazon-chime-sdk-widget-container') as Element,
+    );
   } else {
     return node;
   }

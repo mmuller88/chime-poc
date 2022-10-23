@@ -1,6 +1,10 @@
-import React, { useContext, ReactNode, useState, useEffect } from 'react';
+import React, { ReactNode, useContext, useEffect, useState } from 'react';
 
-type RouteName = 'CreateAppointment' | 'AppointmentList' | 'AppointmentView';
+type RouteName =
+  | 'CreateAppointment'
+  | 'AppointmentList'
+  | 'AppointmentView'
+  | 'DirectCall';
 type Routes = Record<RouteName, ReactNode>;
 
 interface RouteProviderValue {
@@ -8,7 +12,9 @@ interface RouteProviderValue {
   params: Record<string, any>;
 }
 
-const RouteProviderContext = React.createContext<RouteProviderValue | undefined>(undefined);
+const RouteProviderContext = React.createContext<
+  RouteProviderValue | undefined
+>(undefined);
 
 export function useRoute(): RouteProviderValue {
   const value = useContext(RouteProviderContext);
@@ -18,12 +24,18 @@ export function useRoute(): RouteProviderValue {
   return value;
 }
 
-export default function RouteProvider({ routes }: { routes: Routes }) {
+export default function RouteProvider({
+  routes,
+  defaultRoute,
+}: {
+  routes: Routes;
+  defaultRoute?: React.ReactNode;
+}) {
   const [routeInfo, setRouteInfo] = useState<{
     node: ReactNode;
     params?: Record<string, any>;
   }>({
-    node: routes.AppointmentList,
+    node: defaultRoute ?? routes.AppointmentList,
   });
   const value = {
     setRoute: (routeName: RouteName, params?: Record<string, any>) => {
@@ -41,5 +53,9 @@ export default function RouteProvider({ routes }: { routes: Routes }) {
       });
     };
   }, []);
-  return <RouteProviderContext.Provider value={value}>{routeInfo.node}</RouteProviderContext.Provider>;
+  return (
+    <RouteProviderContext.Provider value={value}>
+      {routeInfo.node}
+    </RouteProviderContext.Provider>
+  );
 }
