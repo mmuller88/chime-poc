@@ -27,8 +27,10 @@ import {
 import { Message, MessagingSessionObserver } from 'amazon-chime-sdk-js';
 import { v4 as uuidv4 } from 'uuid';
 import { useMessaging } from '../providers/MessagingProvider';
+import MeetingDoctorView from './MeetingDoctorView';
 
 const REFRESH_INTERVAL = 1000;
+let timeoutId: ReturnType<typeof setTimeout>;
 
 export default function DirectCall(): JSX.Element {
   const { setRoute } = useRoute();
@@ -53,9 +55,6 @@ export default function DirectCall(): JSX.Element {
   // const [channels, setChannels] = useState<Channel[]>();
   const [channel, setChannel] = useState<Channel>();
   const { messagingSession } = useMessaging();
-
-  // For doctor view
-  // const [showMeetingDoctorView, setShowMeetingDoctorView] = useState(false);
 
   const listChannels = useCallback(
     async (channelName: string) => {
@@ -102,6 +101,7 @@ export default function DirectCall(): JSX.Element {
               },
             )?.[0],
           );
+          // if (channel) setShowMeetingDoctorView(true);
         } catch (error) {
           console.error(error);
         }
@@ -229,7 +229,7 @@ export default function DirectCall(): JSX.Element {
     // When the backend creates multiple requests of UpdateChannel API simultaneously,
     // the messaging session (WebSocket) sometimes does not receive all UPDATE_CHANNEL messages.
     // Keep refreshing the list 15 seconds later from the previous listChannels() call.
-    let timeoutId: ReturnType<typeof setTimeout>;
+
     const refreshChannels = () => {
       clearTimeout(timeoutId);
       listChannels(channelName);
@@ -255,7 +255,6 @@ export default function DirectCall(): JSX.Element {
     return () => {
       messagingSession?.removeObserver(observer);
     };
-    // setShowMeetingDoctorView(true);
   }, [
     lambdaClient,
     patients,
@@ -265,9 +264,9 @@ export default function DirectCall(): JSX.Element {
     user,
   ]);
 
-  // const onCleanUpDoctor = useCallback(() => {
-  //   // setShowMeetingDoctorView(false);
-  // }, []);
+  const onCleanUpDoctor = useCallback(() => {
+    // setShowMeetingDoctorView(false);
+  }, []);
 
   // const onCleanUpPatient = useCallback(() => {
   //   if (meetingId) {
@@ -275,10 +274,6 @@ export default function DirectCall(): JSX.Element {
   //     setMeetingId(undefined);
   //   }
   // }, [meetingId]);
-
-  // const onClickCall = useCallback(() => {
-  //   setShowMeetingDoctorView(true);
-  // }, []);
 
   const onSubmit = useCallback(
     async (event) => {
@@ -326,25 +321,9 @@ export default function DirectCall(): JSX.Element {
     ],
   );
 
-  // const now = new Date();
-
   return (
     <div className="DirectCall">
       <form className="DirectCall__form" onSubmit={onSubmit}>
-        {/* <div className="DirectCall__dateContainer">
-          <label>Date and time</label>
-          <DatePicker
-            selected={startDate}
-            onChange={(date: Date) => setStartDate(date)}
-            showTimeSelect
-            timeFormat="h:mm aa"
-            timeIntervals={5}
-            minDate={now}
-            maxDate={dayjs(now).add(3, 'month').toDate()}
-            dateFormat="MMMM d, yyyy h:mm aa"
-            portalId="amazon-chime-sdk-date-picker"
-          />
-        </div> */}
         <div className="DirectCall__selectContainer">
           <label>Patient</label>
           <div className="DirectCall__selectAndArrow">
@@ -387,10 +366,11 @@ export default function DirectCall(): JSX.Element {
       </form>
       {
         <>
-          {/* <Chat channel={channel} /> */}
-          {/* {showMeetingDoctorView && channel && (
-            <DirectCallView channel={channel} onCleanUp={onCleanUpDoctor} />
+          {/* {channel && <Chat channel={channel} />} */}
+          {channel && (
+            <MeetingDoctorView channel={channel} onCleanUp={onCleanUpDoctor} />
           )}
+          {/*
           {meetingId && channel && (
             // We must pass the meeting ID as a key because MeetingPatientView does not support the case when
             // only the meeting ID prop changes. Providing a unique key will mount a new copy of MeetingPatientView.
