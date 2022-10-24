@@ -2,6 +2,7 @@ export interface CreateAppointmentFunctionEvent {
   doctorUsername: string;
   patientUsername: string;
   timestamp: string;
+  existingChannelName: string;
 }
 
 export interface DeleteAppointmentFunctionEvent {

@@ -84,6 +84,7 @@ export default function CreateAppointment(): JSX.Element {
   const onChangePatient = useCallback(
     (event) => {
       setSelectedPatientUsername(event.target.value);
+      // console.log(event.target.value);
     },
     [setSelectedPatientUsername],
   );

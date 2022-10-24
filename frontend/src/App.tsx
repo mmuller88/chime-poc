@@ -42,7 +42,6 @@ function App() {
                     AppointmentList: <AppointmentList />,
                     AppointmentView: <AppointmentView />,
                     DirectCall: <DirectCall />,
-
                     CreateAppointment: <CreateAppointment />,
                   }}
                   defaultRoute={<DirectCall />}

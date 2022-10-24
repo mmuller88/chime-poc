@@ -10,8 +10,15 @@ import {
   DeleteChannelCommand,
   UpdateChannelCommand,
 } from '@aws-sdk/client-chime-sdk-messaging';
-import { CognitoIdentityProviderClient, AdminGetUserCommand } from '@aws-sdk/client-cognito-identity-provider';
-import { SFNClient, StartExecutionCommand, StopExecutionCommand } from '@aws-sdk/client-sfn';
+import {
+  AdminGetUserCommand,
+  CognitoIdentityProviderClient,
+} from '@aws-sdk/client-cognito-identity-provider';
+import {
+  SFNClient,
+  StartExecutionCommand,
+  StopExecutionCommand,
+} from '@aws-sdk/client-sfn';
 import { v4 as uuidv4 } from 'uuid';
 
 import { Presence } from '../../../frontend/src/constants';
@@ -19,14 +26,20 @@ import { ChannelMetadata, CognitoUser } from '../../../frontend/src/types';
 import { CreateAppointmentFunctionEvent } from '../../../frontend/src/types/lambda';
 import { getCognitoUser } from './utils';
 
-const { APP_INSTANCE_ARN, AWS_REGION, CHANNEL_FLOW_ARN, COGNITO_USER_POOL_ID, STATE_MACHINE_ARN } = process.env;
+const {
+  APP_INSTANCE_ARN,
+  AWS_REGION,
+  CHANNEL_FLOW_ARN,
+  COGNITO_USER_POOL_ID,
+  STATE_MACHINE_ARN,
+} = process.env;
 
 const messagingClient = new ChimeSDKMessagingClient({ region: AWS_REGION });
 const cognitoClient = new CognitoIdentityProviderClient({ region: AWS_REGION });
 const sfnClient = new SFNClient({ region: AWS_REGION });
 
 exports.handler = async (event: CreateAppointmentFunctionEvent) => {
-  const { doctorUsername, patientUsername } = event;
+  const { doctorUsername, patientUsername, existingChannelName } = event;
   const timestamp = new Date(event.timestamp);
   const appInstanceUserArn = `${APP_INSTANCE_ARN}/user/${doctorUsername}`;
   let channelArn: string | undefined = undefined;
@@ -38,13 +51,13 @@ exports.handler = async (event: CreateAppointmentFunctionEvent) => {
         new AdminGetUserCommand({
           UserPoolId: COGNITO_USER_POOL_ID,
           Username: doctorUsername,
-        })
+        }),
       ),
       cognitoClient.send(
         new AdminGetUserCommand({
           UserPoolId: COGNITO_USER_POOL_ID,
           Username: patientUsername,
-        })
+        }),
       ),
     ]);
 
@@ -75,7 +88,7 @@ exports.handler = async (event: CreateAppointmentFunctionEvent) => {
         },
       },
     };
-    const channelName = uuidv4();
+    const channelName = existingChannelName ?? uuidv4();
     const data = await messagingClient.send(
       new CreateChannelCommand({
         AppInstanceArn: APP_INSTANCE_ARN,
@@ -84,7 +97,7 @@ exports.handler = async (event: CreateAppointmentFunctionEvent) => {
         Metadata: JSON.stringify(metadata),
         Mode: ChannelMode.RESTRICTED,
         Privacy: ChannelPrivacy.PUBLIC,
-      })
+      }),
     );
     channelArn = data.ChannelArn!;
     await messagingClient.send(
@@ -92,7 +105,7 @@ exports.handler = async (event: CreateAppointmentFunctionEvent) => {
         ChannelArn: channelArn,
         ChannelFlowArn: CHANNEL_FLOW_ARN,
         ChimeBearer: appInstanceUserArn,
-      })
+      }),
     );
     const patientArn = `${APP_INSTANCE_ARN}/user/${patient.username}`;
     await messagingClient.send(
@@ -101,7 +114,7 @@ exports.handler = async (event: CreateAppointmentFunctionEvent) => {
         ChimeBearer: appInstanceUserArn,
         MemberArns: [appInstanceUserArn, patientArn],
         Type: ChannelMembershipType.DEFAULT,
-      })
+      }),
     );
 
     // Make a patient a channel moderator so that a patient can use the ListChannelsModeratedByAppInstanceUser API.
@@ -111,7 +124,7 @@ exports.handler = async (event: CreateAppointmentFunctionEvent) => {
         ChannelArn: channelArn,
         ChannelModeratorArn: patientArn,
         ChimeBearer: appInstanceUserArn,
-      })
+      }),
     );
     const executionData = await sfnClient.send(
       new StartExecutionCommand({
@@ -120,7 +133,7 @@ exports.handler = async (event: CreateAppointmentFunctionEvent) => {
           timestamp: timestamp.toISOString(),
           channelArn: channelArn,
         }),
-      })
+      }),
     );
     executionArn = executionData.executionArn;
     await messagingClient.send(
@@ -133,7 +146,7 @@ exports.handler = async (event: CreateAppointmentFunctionEvent) => {
           ...metadata,
           sfnExecutionArn: executionData.executionArn,
         } as ChannelMetadata),
-      })
+      }),
     );
   } catch (error: any) {
     console.error(error);
@@ -146,7 +159,7 @@ exports.handler = async (event: CreateAppointmentFunctionEvent) => {
           new DeleteChannelCommand({
             ChannelArn: channelArn,
             ChimeBearer: appInstanceUserArn,
-          })
+          }),
         );
       }
     } catch (error: any) {
@@ -159,7 +172,7 @@ exports.handler = async (event: CreateAppointmentFunctionEvent) => {
         await sfnClient.send(
           new StopExecutionCommand({
             executionArn,
-          })
+          }),
         );
       }
     } catch (error: any) {

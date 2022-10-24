@@ -1,22 +1,22 @@
-import { ReactNode, useCallback, useEffect, useState } from 'react';
-import { Message, MessagingSessionObserver } from 'amazon-chime-sdk-js';
 import {
   ChannelModeratedByAppInstanceUserSummary,
   ListChannelsModeratedByAppInstanceUserCommand,
 } from '@aws-sdk/client-chime-sdk-messaging';
+import { Message, MessagingSessionObserver } from 'amazon-chime-sdk-js';
 import dayjs from 'dayjs';
 import calendar from 'dayjs/plugin/calendar';
 import localizedFormat from 'dayjs/plugin/localizedFormat';
+import { ReactNode, useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import './AppointmentList.css';
+import { AccountType, Presence } from '../constants';
+import useMountedRef from '../hooks/useMountedRef';
 import { useAuth } from '../providers/AuthProvider';
 import { useAwsClient } from '../providers/AwsClientProvider';
 import { useMessaging } from '../providers/MessagingProvider';
 import { useRoute } from '../providers/RouteProvider';
-import useMountedRef from '../hooks/useMountedRef';
-import { AccountType, Presence } from '../constants';
 import { Channel, ChannelMetadata } from '../types';
+import './AppointmentList.css';
 
 dayjs.extend(calendar);
 dayjs.extend(localizedFormat);
@@ -42,7 +42,7 @@ export default function AppointmentList(): JSX.Element {
             new ListChannelsModeratedByAppInstanceUserCommand({
               ChimeBearer: appInstanceUserArn,
               NextToken: nextToken,
-            })
+            }),
           );
           channels.push(...(data.Channels || []));
           nextToken = data.NextToken;
@@ -53,21 +53,26 @@ export default function AppointmentList(): JSX.Element {
 
         setChannels(
           channels
-            .map<Channel>((channel: ChannelModeratedByAppInstanceUserSummary) => {
-              const metadata: ChannelMetadata = JSON.parse(channel.ChannelSummary?.Metadata!);
-              return {
-                appointmentTimestamp: new Date(metadata.appointmentTimestamp),
-                doctor: metadata.doctor,
-                patient: metadata.patient,
-                presenceMap: metadata.presenceMap,
-                summary: channel.ChannelSummary,
-                sfnExecutionArn: metadata.sfnExecutionArn,
-              } as Channel;
-            })
+            .map<Channel>(
+              (channel: ChannelModeratedByAppInstanceUserSummary) => {
+                const metadata: ChannelMetadata = JSON.parse(
+                  channel.ChannelSummary?.Metadata!,
+                );
+                return {
+                  appointmentTimestamp: new Date(metadata.appointmentTimestamp),
+                  doctor: metadata.doctor,
+                  patient: metadata.patient,
+                  presenceMap: metadata.presenceMap,
+                  summary: channel.ChannelSummary,
+                  sfnExecutionArn: metadata.sfnExecutionArn,
+                } as Channel;
+              },
+            )
             .sort(
               (channel1: Channel, channel2: Channel) =>
-                channel1.appointmentTimestamp.getTime() - channel2.appointmentTimestamp.getTime()
-            )
+                channel1.appointmentTimestamp.getTime() -
+                channel2.appointmentTimestamp.getTime(),
+            ),
         );
       } catch (error) {
         console.error(error);
@@ -118,7 +123,9 @@ export default function AppointmentList(): JSX.Element {
   };
 
   const getPresenceLabel = (presence: Presence) => {
-    return presence === Presence.CheckedIn ? ` (${t('AppointmentList.checkedIn')})` : '';
+    return presence === Presence.CheckedIn
+      ? ` (${t('AppointmentList.checkedIn')})`
+      : '';
   };
 
   const createList = (title: string, channels?: Channel[]): ReactNode => {
@@ -130,16 +137,27 @@ export default function AppointmentList(): JSX.Element {
         <div className="AppointmentList__listTitle">{title}</div>
         <ul className="AppointmentList__list">
           {channels.map((channel: Channel) => (
-            <li className="AppointmentList__listItem" key={channel.summary.ChannelArn}>
+            <li
+              className="AppointmentList__listItem"
+              key={channel.summary.ChannelArn}
+            >
               <div className="AppointmentList__nameContainer">
                 <div className="AppointmentList__name">
-                  {accountType === AccountType.Doctor ? channel.patient.name : channel.doctor.name}
+                  {accountType === AccountType.Doctor
+                    ? channel.patient.name
+                    : channel.doctor.name}
                 </div>
                 <div className="AppointmentList__label">
-                  {accountType === AccountType.Doctor ? t('AppointmentList.patient') : t('AppointmentList.doctor')}
                   {accountType === AccountType.Doctor
-                    ? getPresenceLabel(channel.presenceMap[channel.patient.username].presence)
-                    : getPresenceLabel(channel.presenceMap[channel.doctor.username].presence)}
+                    ? t('AppointmentList.patient')
+                    : t('AppointmentList.doctor')}
+                  {accountType === AccountType.Doctor
+                    ? getPresenceLabel(
+                        channel.presenceMap[channel.patient.username].presence,
+                      )
+                    : getPresenceLabel(
+                        channel.presenceMap[channel.doctor.username].presence,
+                      )}
                 </div>
               </div>
               <div className="AppointmentList__dateTime">
@@ -158,7 +176,9 @@ export default function AppointmentList(): JSX.Element {
                 </div>
                 <div className="AppointmentList__time">
                   <span className="AppointmentList__icon">{'🕑'}</span>
-                  <span>{dayjs(channel.appointmentTimestamp).format('LT')}</span>
+                  <span>
+                    {dayjs(channel.appointmentTimestamp).format('LT')}
+                  </span>
                 </div>
               </div>
               <div className="AppointmentList__buttonContainer">
@@ -178,8 +198,12 @@ export default function AppointmentList(): JSX.Element {
     );
   };
 
-  const currentChannels = channels?.filter((channel: Channel) => !dayjs(channel.appointmentTimestamp).isAfter(dayjs()));
-  const upcomingChannels = channels?.filter((channel: Channel) => dayjs(channel.appointmentTimestamp).isAfter(dayjs()));
+  const currentChannels = channels?.filter(
+    (channel: Channel) => !dayjs(channel.appointmentTimestamp).isAfter(dayjs()),
+  );
+  const upcomingChannels = channels?.filter((channel: Channel) =>
+    dayjs(channel.appointmentTimestamp).isAfter(dayjs()),
+  );
 
   return (
     <div className="AppointmentList">
@@ -192,11 +216,17 @@ export default function AppointmentList(): JSX.Element {
           </div>
         )}
         {createList(t('AppointmentList.currentAppointments'), currentChannels)}
-        {createList(t('AppointmentList.upcomingAppointments'), upcomingChannels)}
+        {createList(
+          t('AppointmentList.upcomingAppointments'),
+          upcomingChannels,
+        )}
       </div>
       {accountType === AccountType.Doctor && (
         <div className="AppointmentList__createAppointmentContainer">
-          <button className="AppointmentList__createAppointmentButton" onClick={onClickCreateAppointment}>
+          <button
+            className="AppointmentList__createAppointmentButton"
+            onClick={onClickCreateAppointment}
+          >
             {t('AppointmentList.createAppointment')}
           </button>
         </div>
