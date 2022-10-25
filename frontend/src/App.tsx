@@ -4,6 +4,7 @@ import AppointmentList from './components/AppointmentList';
 import AppointmentView from './components/AppointmentView';
 import CreateAppointment from './components/CreateAppointment';
 import DirectCall from './components/DirectCall';
+import PickupRunner from './components/PickupRunner';
 import Widget from './components/Widget';
 import './index.css';
 import './localization';
@@ -37,15 +38,12 @@ function App() {
             </Widget>
             <Widget number={2}>
               <MessagingProvider>
-                <RouteProvider
-                  routes={{
-                    AppointmentList: <AppointmentList />,
-                    AppointmentView: <AppointmentView />,
-                    DirectCall: <DirectCall />,
-                    CreateAppointment: <CreateAppointment />,
-                  }}
-                  defaultRoute={<DirectCall />}
-                />
+                <DirectCall />
+              </MessagingProvider>
+            </Widget>
+            <Widget number={3}>
+              <MessagingProvider>
+                <PickupRunner />
               </MessagingProvider>
             </Widget>
           </AwsClientProvider>

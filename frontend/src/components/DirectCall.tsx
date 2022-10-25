@@ -7,7 +7,7 @@ import 'react-datepicker/dist/react-datepicker.css';
 
 import { useAuth } from '../providers/AuthProvider';
 import { useAwsClient } from '../providers/AwsClientProvider';
-import { useRoute } from '../providers/RouteProvider';
+// import { useRoute } from '../providers/RouteProvider';
 import { Channel, ChannelMetadata, CognitoUser } from '../types';
 // import Chat from './Chat';
 import './DirectCall.css';
@@ -18,7 +18,10 @@ import dayjs from 'dayjs';
 import { useTranslation } from 'react-i18next';
 import useMountedRef from '../hooks/useMountedRef';
 import { useRuntime } from '../providers/RuntimeProvider';
-import { CreateAppointmentFunctionEvent } from '../types/lambda';
+import {
+  CreateAppointmentFunctionEvent,
+  DeleteAppointmentFunctionEvent,
+} from '../types/lambda';
 
 import {
   ChannelModeratedByAppInstanceUserSummary,
@@ -30,14 +33,16 @@ import { useMessaging } from '../providers/MessagingProvider';
 import MeetingDoctorView from './MeetingDoctorView';
 
 const REFRESH_INTERVAL = 1000;
+const RETRIES = 5;
 let timeoutId: ReturnType<typeof setTimeout>;
 
 export default function DirectCall(): JSX.Element {
-  const { setRoute } = useRoute();
+  // const { setRoute } = useRoute();
   const {
     patientUserPoolGroupName,
     cognitoUserPoolId,
     createAppointmentFunctionArn,
+    deleteAppointmentFunctionArn,
   } = useRuntime();
   const { cognitoClient, lambdaClient, messagingClient } = useAwsClient();
   const { user, appInstanceUserArn } = useAuth();
@@ -51,7 +56,7 @@ export default function DirectCall(): JSX.Element {
   const mountedRef = useMountedRef();
   // const cleanedUpMeetingIdsRef = useRef<Set<string>>(new Set());
   const { t } = useTranslation();
-  // const [showMeetingDoctorView, setShowMeetingDoctorView] = useState(false);
+  const [showMeetingDoctorView, setShowMeetingDoctorView] = useState(false);
   // const [channels, setChannels] = useState<Channel[]>();
   const [channel, setChannel] = useState<Channel>();
   const { messagingSession } = useMessaging();
@@ -59,7 +64,7 @@ export default function DirectCall(): JSX.Element {
   const listChannels = useCallback(
     async (channelName: string) => {
       (async () => {
-        console.log('listChannels');
+        // console.log('listChannels');
         try {
           let channels: ChannelModeratedByAppInstanceUserSummary[] = [];
           let nextToken: string | undefined;
@@ -83,24 +88,23 @@ export default function DirectCall(): JSX.Element {
             return;
           }
 
-          console.log(channels);
-          setChannel(
-            channels.map<Channel>(
-              (channel: ChannelModeratedByAppInstanceUserSummary) => {
-                const metadata: ChannelMetadata = JSON.parse(
-                  channel.ChannelSummary?.Metadata!,
-                );
-                return {
-                  appointmentTimestamp: new Date(metadata.appointmentTimestamp),
-                  doctor: metadata.doctor,
-                  patient: metadata.patient,
-                  presenceMap: metadata.presenceMap,
-                  summary: channel.ChannelSummary,
-                  sfnExecutionArn: metadata.sfnExecutionArn,
-                } as Channel;
-              },
-            )?.[0],
-          );
+          // console.log(channels);
+          const newChannel = channels.map<Channel>(
+            (channel: ChannelModeratedByAppInstanceUserSummary) => {
+              const metadata: ChannelMetadata = JSON.parse(
+                channel.ChannelSummary?.Metadata!,
+              );
+              return {
+                appointmentTimestamp: new Date(metadata.appointmentTimestamp),
+                doctor: metadata.doctor,
+                patient: metadata.patient,
+                presenceMap: metadata.presenceMap,
+                summary: channel.ChannelSummary,
+                sfnExecutionArn: metadata.sfnExecutionArn,
+              } as Channel;
+            },
+          )?.[0];
+          if (newChannel) setChannel(newChannel);
           // if (channel) setShowMeetingDoctorView(true);
         } catch (error) {
           console.error(error);
@@ -109,38 +113,6 @@ export default function DirectCall(): JSX.Element {
     },
     [appInstanceUserArn, messagingClient, mountedRef],
   );
-
-  // useEffect(() => {
-  //   // When the backend creates multiple requests of UpdateChannel API simultaneously,
-  //   // the messaging session (WebSocket) sometimes does not receive all UPDATE_CHANNEL messages.
-  //   // Keep refreshing the list 15 seconds later from the previous listChannels() call.
-  //   let timeoutId: ReturnType<typeof setTimeout>;
-  //   const refreshChannels = () => {
-  //     clearTimeout(timeoutId);
-  //     listChannels();
-  //     timeoutId = setTimeout(refreshChannels, REFRESH_INTERVAL);
-  //   };
-
-  //   let observer: MessagingSessionObserver;
-  //   if (messagingSession) {
-  //     observer = {
-  //       messagingSessionDidReceiveMessage: (message: Message) => {
-  //         if (
-  //           message.type === 'CREATE_CHANNEL_MEMBERSHIP' ||
-  //           message.type === 'DELETE_CHANNEL' ||
-  //           message.type === 'UPDATE_CHANNEL'
-  //         ) {
-  //           refreshChannels();
-  //         }
-  //       },
-  //     };
-  //     messagingSession.addObserver(observer);
-  //     refreshChannels();
-  //   }
-  //   return () => {
-  //     messagingSession?.removeObserver(observer);
-  //   };
-  // }, [messagingSession, listChannels]);
 
   useEffect(() => {
     (async () => {
@@ -193,6 +165,7 @@ export default function DirectCall(): JSX.Element {
 
   const onChangePatient = useCallback(
     (event) => {
+      console.log('onChangePatient');
       setSelectedPatientUsername(event.target.value);
       console.log(event.target.value);
     },
@@ -226,14 +199,23 @@ export default function DirectCall(): JSX.Element {
       }),
     );
 
+    setShowMeetingDoctorView(true);
+
     // When the backend creates multiple requests of UpdateChannel API simultaneously,
     // the messaging session (WebSocket) sometimes does not receive all UPDATE_CHANNEL messages.
     // Keep refreshing the list 15 seconds later from the previous listChannels() call.
 
+    let currentRetry: number;
+
     const refreshChannels = () => {
+      if (channel || currentRetry === 0) {
+        setLoading(false);
+        return;
+      }
       clearTimeout(timeoutId);
       listChannels(channelName);
       timeoutId = setTimeout(refreshChannels, REFRESH_INTERVAL);
+      currentRetry--;
     };
 
     let observer: MessagingSessionObserver;
@@ -250,6 +232,7 @@ export default function DirectCall(): JSX.Element {
         },
       };
       messagingSession.addObserver(observer);
+      currentRetry = RETRIES;
       refreshChannels();
     }
     return () => {
@@ -259,14 +242,42 @@ export default function DirectCall(): JSX.Element {
     lambdaClient,
     patients,
     selectedPatientUsername,
-    setRoute,
+    // setRoute,
+    channel,
     // startDate,
     user,
   ]);
 
   const onCleanUpDoctor = useCallback(() => {
-    // setShowMeetingDoctorView(false);
-  }, []);
+    console.log('onCleanUpDoctor');
+    setShowMeetingDoctorView(false);
+
+    (async () => {
+      try {
+        console.log(channel);
+        await lambdaClient.send(
+          new InvokeCommand({
+            FunctionName: deleteAppointmentFunctionArn,
+            InvocationType: InvocationType.RequestResponse,
+            LogType: LogType.None,
+            Payload: new TextEncoder().encode(
+              JSON.stringify({
+                appInstanceUserArn,
+                channelArn: channel?.summary.ChannelArn,
+              } as DeleteAppointmentFunctionEvent),
+            ),
+          }),
+        );
+
+        setChannel(undefined);
+      } catch (error: any) {
+        console.error(error);
+      } finally {
+        // setRoute('AppointmentList');
+        // loadingRef.current = false;
+      }
+    })();
+  }, [channel]);
 
   // const onCleanUpPatient = useCallback(() => {
   //   if (meetingId) {
@@ -305,7 +316,7 @@ export default function DirectCall(): JSX.Element {
         //     ),
         //   }),
         // );
-        setRoute('AppointmentList');
+        // setRoute('AppointmentList');
       } catch (error) {
         console.error(error);
         setLoading(false);
@@ -315,7 +326,7 @@ export default function DirectCall(): JSX.Element {
       lambdaClient,
       patients,
       selectedPatientUsername,
-      setRoute,
+      // setRoute,
       // startDate,
       user,
     ],
@@ -367,7 +378,7 @@ export default function DirectCall(): JSX.Element {
       {
         <>
           {/* {channel && <Chat channel={channel} />} */}
-          {channel && (
+          {showMeetingDoctorView && channel && (
             <MeetingDoctorView channel={channel} onCleanUp={onCleanUpDoctor} />
           )}
           {/*
