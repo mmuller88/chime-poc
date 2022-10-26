@@ -32,3 +32,7 @@ yarn start
 ## Can I change the language used in the demo?
 
 Yes, the demo supports localization using [i18next](https://www.i18next.com/) and [react-i18next](https://react.i18next.com/) internationalization frameworks. Follow the steps mentioned in `frontend/src/localization/index.ts` to support your language.
+
+## Resources
+
+* https://github.com/aws-samples/amazon-chime-sdk/tree/main/apps

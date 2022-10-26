@@ -21,7 +21,7 @@ import './AppointmentList.css';
 dayjs.extend(calendar);
 dayjs.extend(localizedFormat);
 
-const REFRESH_INTERVAL = 15000;
+// const REFRESH_INTERVAL = 1000;
 
 export default function PickupRunner(): JSX.Element {
   const { messagingClient } = useAwsClient();
@@ -35,6 +35,8 @@ export default function PickupRunner(): JSX.Element {
   const listChannels = useCallback(async () => {
     (async () => {
       try {
+        console.log('listChannels');
+
         const channels: ChannelModeratedByAppInstanceUserSummary[] = [];
         let nextToken: string | undefined;
         do {
@@ -84,11 +86,11 @@ export default function PickupRunner(): JSX.Element {
     // When the backend creates multiple requests of UpdateChannel API simultaneously,
     // the messaging session (WebSocket) sometimes does not receive all UPDATE_CHANNEL messages.
     // Keep refreshing the list 15 seconds later from the previous listChannels() call.
-    let timeoutId: ReturnType<typeof setTimeout>;
+    // let timeoutId: ReturnType<typeof setTimeout>;
     const refreshChannels = () => {
-      clearTimeout(timeoutId);
+      // clearTimeout(timeoutId);
       listChannels();
-      timeoutId = setTimeout(refreshChannels, REFRESH_INTERVAL);
+      // timeoutId = setTimeout(refreshChannels, REFRESH_INTERVAL);
     };
 
     let observer: MessagingSessionObserver;
