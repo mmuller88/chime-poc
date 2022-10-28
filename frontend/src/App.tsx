@@ -5,6 +5,7 @@ import AppointmentView from './components/AppointmentView';
 import CreateAppointment from './components/CreateAppointment';
 import DirectCall from './components/DirectCall';
 import PickupRunner from './components/PickupRunner';
+import WaitingRoom from './components/WaitingRoom';
 import Widget from './components/Widget';
 import './index.css';
 import './localization';
@@ -44,6 +45,11 @@ function App() {
             <Widget title="Pickup Runner" number={3}>
               <MessagingProvider>
                 <PickupRunner />
+              </MessagingProvider>
+            </Widget>
+            <Widget title="Waiting Room" number={4}>
+              <MessagingProvider>
+                <WaitingRoom />
               </MessagingProvider>
             </Widget>
           </AwsClientProvider>
