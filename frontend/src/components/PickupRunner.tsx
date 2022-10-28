@@ -116,7 +116,6 @@ export default function PickupRunner(): JSX.Element {
 
   return (
     <div className="AppointmentList">
-      PickupRunner
       {accountType === AccountType.Doctor && channel && (
         <MeetingDoctorView channel={channel} onCleanUp={onCleanUpPatient} />
       )}

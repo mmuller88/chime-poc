@@ -14,9 +14,11 @@ import Window from './Window';
 export default function Widget({
   children,
   number,
+  title,
 }: {
   children: ReactNode;
   number?: number;
+  title?: string;
 }): JSX.Element {
   const { user, signOut } = useAuthenticator();
   const { t } = useTranslation();
@@ -24,7 +26,7 @@ export default function Widget({
     <ThemeProvider theme={lightTheme}>
       <Window
         className="Widget__window"
-        title={t('Widget.title')}
+        title={`${title ? title + ' ' : ''}${t('Widget.title')}`}
         number={number}
         rightNode={
           user ? (

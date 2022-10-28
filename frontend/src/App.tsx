@@ -24,7 +24,7 @@ function App() {
       <RuntimeProvider>
         <AuthProvider>
           <AwsClientProvider>
-            <Widget number={1}>
+            <Widget title="Original" number={1}>
               <MessagingProvider>
                 <RouteProvider
                   routes={{
@@ -36,12 +36,12 @@ function App() {
                 />
               </MessagingProvider>
             </Widget>
-            <Widget number={2}>
+            <Widget title="Direct Call" number={2}>
               <MessagingProvider>
                 <DirectCall />
               </MessagingProvider>
             </Widget>
-            <Widget number={3}>
+            <Widget title="Pickup Runner" number={3}>
               <MessagingProvider>
                 <PickupRunner />
               </MessagingProvider>
