@@ -1,22 +1,24 @@
 import {
-  ChannelModeratedByAppInstanceUserSummary,
-  ListChannelsModeratedByAppInstanceUserCommand,
+  ChannelMessage,
+  DescribeChannelModeratedByAppInstanceUserCommand,
+  DescribeChannelModeratedByAppInstanceUserCommandOutput,
 } from '@aws-sdk/client-chime-sdk-messaging';
 import { Message, MessagingSessionObserver } from 'amazon-chime-sdk-js';
 import dayjs from 'dayjs';
 import calendar from 'dayjs/plugin/calendar';
 import localizedFormat from 'dayjs/plugin/localizedFormat';
-import { ReactNode, useCallback, useEffect, useState } from 'react';
-import { useTranslation } from 'react-i18next';
+import { useCallback, useEffect, useState } from 'react';
+import { AccountType } from '../constants';
 
-import { AccountType, Presence } from '../constants';
 import useMountedRef from '../hooks/useMountedRef';
 import { useAuth } from '../providers/AuthProvider';
 import { useAwsClient } from '../providers/AwsClientProvider';
 import { useMessaging } from '../providers/MessagingProvider';
 // import { useRoute } from '../providers/RouteProvider';
-import { Channel, ChannelMetadata } from '../types';
+import { Channel, ChannelMetadata, MessageMetadata } from '../types';
 import './AppointmentList.css';
+import MeetingDoctorView from './MeetingDoctorView';
+import MeetingPatientView from './MeetingPatientView';
 
 dayjs.extend(calendar);
 dayjs.extend(localizedFormat);
@@ -27,192 +29,107 @@ export default function PickupRunner(): JSX.Element {
   const { messagingClient } = useAwsClient();
   const { appInstanceUserArn, accountType } = useAuth();
   // const { setRoute } = useRoute();
-  const [channels, setChannels] = useState<Channel[]>();
+  const [channel, setChannel] = useState<Channel>();
+  const [meetingId, setMeetingId] = useState<string>();
   const { messagingSession } = useMessaging();
   const mountedRef = useMountedRef();
-  const { t } = useTranslation();
+  // const { t } = useTranslation();
 
-  const listChannels = useCallback(async () => {
-    (async () => {
-      try {
-        console.log('listChannels');
+  const getChannel = useCallback(
+    async (channelArn: string) => {
+      (async () => {
+        try {
+          console.log('getChannel');
 
-        const channels: ChannelModeratedByAppInstanceUserSummary[] = [];
-        let nextToken: string | undefined;
-        do {
-          const data = await messagingClient.send(
-            new ListChannelsModeratedByAppInstanceUserCommand({
-              ChimeBearer: appInstanceUserArn,
-              NextToken: nextToken,
-            }),
+          const data: DescribeChannelModeratedByAppInstanceUserCommandOutput =
+            await messagingClient.send(
+              new DescribeChannelModeratedByAppInstanceUserCommand({
+                ChimeBearer: appInstanceUserArn,
+                ChannelArn: channelArn,
+                AppInstanceUserArn: appInstanceUserArn,
+              }),
+            );
+
+          const metadata: ChannelMetadata = JSON.parse(
+            data.Channel?.ChannelSummary?.Metadata!,
           );
-          channels.push(...(data.Channels || []));
-          nextToken = data.NextToken;
-        } while (nextToken);
-        if (!mountedRef.current) {
-          return;
-        }
 
-        setChannels(
-          channels
-            .map<Channel>(
-              (channel: ChannelModeratedByAppInstanceUserSummary) => {
-                const metadata: ChannelMetadata = JSON.parse(
-                  channel.ChannelSummary?.Metadata!,
-                );
-                return {
-                  appointmentTimestamp: new Date(metadata.appointmentTimestamp),
-                  doctor: metadata.doctor,
-                  patient: metadata.patient,
-                  presenceMap: metadata.presenceMap,
-                  summary: channel.ChannelSummary,
-                  sfnExecutionArn: metadata.sfnExecutionArn,
-                } as Channel;
-              },
-            )
-            .sort(
-              (channel1: Channel, channel2: Channel) =>
-                channel1.appointmentTimestamp.getTime() -
-                channel2.appointmentTimestamp.getTime(),
-            ),
-        );
-      } catch (error) {
-        console.error(error);
-      }
-    })();
-  }, [appInstanceUserArn, messagingClient, mountedRef]);
+          if (data) {
+            setChannel({
+              appointmentTimestamp: new Date(metadata.appointmentTimestamp),
+              doctor: metadata.doctor,
+              patient: metadata.patient,
+              presenceMap: metadata.presenceMap,
+              summary: data.Channel?.ChannelSummary,
+              sfnExecutionArn: metadata.sfnExecutionArn,
+            } as Channel);
+          }
+        } catch (error) {
+          console.error(error);
+        }
+      })();
+    },
+    [appInstanceUserArn, messagingClient, mountedRef],
+  );
 
   useEffect(() => {
-    // When the backend creates multiple requests of UpdateChannel API simultaneously,
-    // the messaging session (WebSocket) sometimes does not receive all UPDATE_CHANNEL messages.
-    // Keep refreshing the list 15 seconds later from the previous listChannels() call.
-    // let timeoutId: ReturnType<typeof setTimeout>;
-    const refreshChannels = () => {
-      // clearTimeout(timeoutId);
-      listChannels();
-      // timeoutId = setTimeout(refreshChannels, REFRESH_INTERVAL);
-    };
-
     let observer: MessagingSessionObserver;
     if (messagingSession) {
       observer = {
         messagingSessionDidReceiveMessage: (message: Message) => {
-          if (
-            message.type === 'CREATE_CHANNEL_MEMBERSHIP' ||
-            message.type === 'DELETE_CHANNEL' ||
-            message.type === 'UPDATE_CHANNEL'
-          ) {
-            refreshChannels();
+          if (message.type === 'CREATE_CHANNEL_MESSAGE' && !channel) {
+            const messageObj = JSON.parse(message.payload) as ChannelMessage;
+            if (
+              messageObj.Content === 'Sending%20a%20meeting%20invite' &&
+              messageObj.Sender?.Arn !== appInstanceUserArn
+            ) {
+              console.log('MeetingInvite!');
+              console.log(message);
+              const channelArn = messageObj.ChannelArn;
+              const metadata: MessageMetadata = JSON.parse(
+                messageObj.Metadata!,
+              );
+              const meetingId = metadata.meetingId;
+              console.log(`channelArn=${channelArn}`);
+              console.log(`meetingId=${meetingId}`);
+              setMeetingId(meetingId);
+              getChannel(channelArn ?? '');
+            }
+            //
           }
         },
       };
       messagingSession.addObserver(observer);
-      refreshChannels();
+      // refreshChannels();
     }
     return () => {
       messagingSession?.removeObserver(observer);
     };
-  }, [messagingSession, listChannels]);
+  }, [messagingSession, getChannel, channel]);
 
-  // const onClickCreateAppointment = () => {
-  //   setRoute('CreateAppointment');
-  // };
-
-  // const onClickAppointment = (channel: Channel) => {
-  //   setRoute('AppointmentView', {
-  //     channel,
-  //   });
-  // };
-
-  const getPresenceLabel = (presence: Presence) => {
-    return presence === Presence.CheckedIn
-      ? ` (${t('AppointmentList.checkedIn')})`
-      : '';
-  };
-
-  const createList = (title: string, channels?: Channel[]): ReactNode => {
-    if (!channels?.length) {
-      return <></>;
+  const onCleanUpPatient = useCallback(() => {
+    if (meetingId) {
+      setMeetingId(undefined);
+      setChannel(undefined);
     }
-    return (
-      <>
-        <div className="AppointmentList__listTitle">{title}</div>
-        <ul className="AppointmentList__list">
-          {channels.map((channel: Channel) => (
-            <li
-              className="AppointmentList__listItem"
-              key={channel.summary.ChannelArn}
-            >
-              <div className="AppointmentList__nameContainer">
-                <div className="AppointmentList__name">
-                  {accountType === AccountType.Doctor
-                    ? channel.patient.name
-                    : channel.doctor.name}
-                </div>
-                <div className="AppointmentList__label">
-                  {accountType === AccountType.Doctor
-                    ? t('AppointmentList.patient')
-                    : t('AppointmentList.doctor')}
-                  {accountType === AccountType.Doctor
-                    ? getPresenceLabel(
-                        channel.presenceMap[channel.patient.username].presence,
-                      )
-                    : getPresenceLabel(
-                        channel.presenceMap[channel.doctor.username].presence,
-                      )}
-                </div>
-              </div>
-              <div className="AppointmentList__dateTime">
-                <div className="AppointmentList__date">
-                  <span className="AppointmentList__icon">{'📅'}</span>
-                  <span>
-                    {dayjs(channel.appointmentTimestamp).calendar(null, {
-                      sameDay: t('AppointmentList.dayJsSameDayFormat'),
-                      nextDay: t('AppointmentList.dayJsNextDayFormat'),
-                      nextWeek: 'L',
-                      lastDay: 'L',
-                      lastWeek: 'L',
-                      sameElse: 'L',
-                    })}
-                  </span>
-                </div>
-                <div className="AppointmentList__time">
-                  <span className="AppointmentList__icon">{'🕑'}</span>
-                  <span>
-                    {dayjs(channel.appointmentTimestamp).format('LT')}
-                  </span>
-                </div>
-              </div>
-            </li>
-          ))}
-        </ul>
-      </>
-    );
-  };
-
-  const currentChannels = channels?.filter(
-    (channel: Channel) => !dayjs(channel.appointmentTimestamp).isAfter(dayjs()),
-  );
-  const upcomingChannels = channels?.filter((channel: Channel) =>
-    dayjs(channel.appointmentTimestamp).isAfter(dayjs()),
-  );
+  }, [meetingId]);
 
   return (
     <div className="AppointmentList">
-      <div className="AppointmentList__listContainer">
-        {currentChannels?.length === 0 && upcomingChannels?.length === 0 && (
-          <div className="AppointmentList__noAppointment">
-            {accountType === AccountType.Doctor
-              ? 'No appointments are available.'
-              : 'No appointments are available. Ask your doctor to make an appointment.'}
-          </div>
-        )}
-        {createList(t('AppointmentList.currentAppointments'), currentChannels)}
-        {createList(
-          t('AppointmentList.upcomingAppointments'),
-          upcomingChannels,
-        )}
-      </div>
+      PickupRunner
+      {accountType === AccountType.Doctor && channel && (
+        <MeetingDoctorView channel={channel} onCleanUp={onCleanUpPatient} />
+      )}
+      {meetingId && channel && (
+        // We must pass the meeting ID as a key because MeetingPatientView does not support the case when
+        // only the meeting ID prop changes. Providing a unique key will mount a new copy of MeetingPatientView.
+        <MeetingPatientView
+          key={meetingId}
+          channel={channel}
+          meetingId={meetingId}
+          onCleanUp={onCleanUpPatient}
+        />
+      )}
     </div>
   );
 }

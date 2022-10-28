@@ -1,0 +1,14 @@
+{
+  "Member": {
+    "Name": "Martin Mueller",
+    "Arn": "arn:aws:chime:eu-central-1:981237193288:app-instance/d6c0e488-3573-4779-bd13-f6909b8764e4/user/bce45f97-8bee-447e-9969-6165a8a245fe"
+  },
+  "InvitedBy": {
+    "Name": "Martin Mueller",
+    "Arn": "arn:aws:chime:eu-central-1:981237193288:app-instance/d6c0e488-3573-4779-bd13-f6909b8764e4/user/bce45f97-8bee-447e-9969-6165a8a245fe"
+  },
+  "CreatedTimestamp": "2022-10-26T10:04:48.567Z",
+  "Type": "DEFAULT",
+  "ChannelArn": "arn:aws:chime:eu-central-1:981237193288:app-instance/d6c0e488-3573-4779-bd13-f6909b8764e4/channel/83ed8baa4158f90f0c8b396f7bb666a05dea01b846dc33b79d8c6b05ba73d86c",
+  "LastUpdatedTimestamp": "2022-10-26T10:04:48.567Z"
+}

@@ -32,9 +32,9 @@ import { v4 as uuidv4 } from 'uuid';
 import { useMessaging } from '../providers/MessagingProvider';
 import MeetingDoctorView from './MeetingDoctorView';
 
-const REFRESH_INTERVAL = 1000;
-const RETRIES = 5;
-let timeoutId: ReturnType<typeof setTimeout>;
+// const REFRESH_INTERVAL = 1000;
+// const RETRIES = 1;
+// let timeoutId: ReturnType<typeof setTimeout>;
 
 export default function DirectCall(): JSX.Element {
   // const { setRoute } = useRoute();
@@ -205,17 +205,17 @@ export default function DirectCall(): JSX.Element {
     // the messaging session (WebSocket) sometimes does not receive all UPDATE_CHANNEL messages.
     // Keep refreshing the list 15 seconds later from the previous listChannels() call.
 
-    let currentRetry: number;
+    // let currentRetry: number;
 
     const refreshChannels = () => {
-      if (channel || currentRetry === 0) {
-        setLoading(false);
-        return;
-      }
-      clearTimeout(timeoutId);
+      // if (channel || currentRetry === 0) {
+      //   setLoading(false);
+      //   return;
+      // }
+      // clearTimeout(timeoutId);
       listChannels(channelName);
-      timeoutId = setTimeout(refreshChannels, REFRESH_INTERVAL);
-      currentRetry--;
+      // timeoutId = setTimeout(refreshChannels, REFRESH_INTERVAL);
+      // currentRetry--;
     };
 
     let observer: MessagingSessionObserver;
@@ -232,7 +232,7 @@ export default function DirectCall(): JSX.Element {
         },
       };
       messagingSession.addObserver(observer);
-      currentRetry = RETRIES;
+      // currentRetry = RETRIES;
       refreshChannels();
     }
     return () => {

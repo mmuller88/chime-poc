@@ -84,7 +84,10 @@ export default function useMeetingFunctions(): MeetingAPI {
             ),
           }),
         );
+        console.log(`meetingId=${meetingId}`);
+        console.log(`channel=${JSON.stringify(channel)}`);
         const response = JSON.parse(new TextDecoder().decode(data.Payload));
+        console.log(`createAttendee=${JSON.stringify(response)}`);
         if (response.statusCode === 200) {
           const joinInfo = JSON.parse(response.body);
           meetingAPIResponse.Meeting = joinInfo.JoinInfo.Meeting;

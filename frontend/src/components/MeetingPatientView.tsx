@@ -1,20 +1,20 @@
-import { useCallback, useState } from 'react';
-import { MeetingProvider } from 'amazon-chime-sdk-component-library-react';
 import {
   ChannelMessagePersistenceType,
   ChannelMessageType,
   SendChannelMessageCommand,
 } from '@aws-sdk/client-chime-sdk-messaging';
-import { useTranslation, Trans } from 'react-i18next';
+import { MeetingProvider } from 'amazon-chime-sdk-component-library-react';
+import { useCallback, useState } from 'react';
+import { Trans, useTranslation } from 'react-i18next';
 import Window from './Window';
 
-import './MeetingPatientView.css';
+import { MeetingInviteStatus, ReservedMessageContent } from '../constants';
+import useMeetingFunctions from '../hooks/useMeetingFunctions';
+import { useAuth } from '../providers/AuthProvider';
 import { useAwsClient } from '../providers/AwsClientProvider';
 import { useMessaging } from '../providers/MessagingProvider';
-import { useAuth } from '../providers/AuthProvider';
-import useMeetingFunctions from '../hooks/useMeetingFunctions';
-import { ReservedMessageContent, MeetingInviteStatus } from '../constants';
 import { Channel, MeetingAPIResponse, MessageMetadata } from '../types';
+import './MeetingPatientView.css';
 import MeetingWidget from './MeetingWidget';
 
 interface Props {
@@ -23,7 +23,11 @@ interface Props {
   onCleanUp: () => void;
 }
 
-export default function MeetingPatientView({ channel, meetingId, onCleanUp }: Props) {
+export default function MeetingPatientView({
+  channel,
+  meetingId,
+  onCleanUp,
+}: Props) {
   const { messagingClient } = useAwsClient();
   const { appInstanceUserArn } = useAuth();
   const { clientId } = useMessaging();
@@ -49,15 +53,23 @@ export default function MeetingPatientView({ channel, meetingId, onCleanUp }: Pr
             meetingInviteStatus: MeetingInviteStatus.Accepted,
             meetingId,
           } as MessageMetadata),
-        })
+        }),
       );
       const response = await createAttendee(channel, meetingId!);
+      // console.log(`createAttendee=${JSON.stringify(response)}`);
       setJoinInfo(response);
       setShowStartingMeeting(false);
     } catch (error: any) {
       console.error(error);
     }
-  }, [appInstanceUserArn, channel, clientId, createAttendee, meetingId, messagingClient]);
+  }, [
+    appInstanceUserArn,
+    channel,
+    clientId,
+    createAttendee,
+    meetingId,
+    messagingClient,
+  ]);
 
   const onClickDecline = useCallback(() => {
     try {
@@ -76,18 +88,29 @@ export default function MeetingPatientView({ channel, meetingId, onCleanUp }: Pr
             meetingInviteStatus: MeetingInviteStatus.Declined,
             meetingId,
           } as MessageMetadata),
-        })
+        }),
       );
       onCleanUp();
     } catch (error: any) {
       console.error(error);
     }
-  }, [appInstanceUserArn, channel.summary.ChannelArn, clientId, meetingId, messagingClient, onCleanUp]);
+  }, [
+    appInstanceUserArn,
+    channel.summary.ChannelArn,
+    clientId,
+    meetingId,
+    messagingClient,
+    onCleanUp,
+  ]);
 
   return (
-    <Window className="MeetingPatientView__window" isPortal title={t('MeetingPatientView.title', {
-      name: channel.doctor.name,
-    })}>
+    <Window
+      className="MeetingPatientView__window"
+      isPortal
+      title={t('MeetingPatientView.title', {
+        name: channel.doctor.name,
+      })}
+    >
       <div className="MeetingPatientView">
         {!joinInfo && !showStartingMeeting && (
           <div className="MeetingPatientView__invitationContainer">
@@ -99,10 +122,16 @@ export default function MeetingPatientView({ channel, meetingId, onCleanUp }: Pr
                 }}
               />
             </p>
-            <button className="MeetingPatientView__acceptButton" onClick={onClickAccept}>
+            <button
+              className="MeetingPatientView__acceptButton"
+              onClick={onClickAccept}
+            >
               {t('MeetingPatientView.accept')}
             </button>
-            <button className="MeetingPatientView__declineButton" onClick={onClickDecline}>
+            <button
+              className="MeetingPatientView__declineButton"
+              onClick={onClickDecline}
+            >
               {t('MeetingPatientView.decline')}
             </button>
           </div>

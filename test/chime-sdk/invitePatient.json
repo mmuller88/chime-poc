@@ -1,0 +1,8 @@
+{
+  "type": "CREATE_CHANNEL_MESSAGE",
+  "headers": {
+    "x-amz-chime-event-type": "CREATE_CHANNEL_MESSAGE",
+    "x-amz-chime-message-type": "STANDARD"
+  },
+  "payload": "{\"Content\":\"Sending%20a%20meeting%20invite\",\"Persistence\":\"NON_PERSISTENT\",\"Redacted\":false,\"LastUpdatedTimestamp\":\"2022-10-26T12:40:33.056Z\",\"Sender\":{\"Name\":\"Martin Mueller\",\"Arn\":\"arn:aws:chime:eu-central-1:981237193288:app-instance/d6c0e488-3573-4779-bd13-f6909b8764e4/user/bce45f97-8bee-447e-9969-6165a8a245fe\"},\"Type\":\"STANDARD\",\"MessageId\":\"6f3c5aece8120bcbb6f6f7df703debfab7b31c00b5caba2cf77a1c9e5f7002bf\",\"CreatedTimestamp\":\"2022-10-26T12:40:33.056Z\",\"Status\":{\"Value\":\"SENT\"},\"ChannelArn\":\"arn:aws:chime:eu-central-1:981237193288:app-instance/d6c0e488-3573-4779-bd13-f6909b8764e4/channel/1203ab67bc5506110309cb2a93b504a9e20adc932306de5d464491765ea05c06\",\"Metadata\":\"{\\\"clientId\\\":\\\"ca4d3995-8e2c-427f-9b6b-858363d97d99\\\",\\\"isMeetingInvitation\\\":true,\\\"isPresence\\\":true,\\\"meetingId\\\":\\\"e941e9cd-6028-4df0-967c-80d959567979\\\",\\\"meetingInviteStatus\\\":\\\"Unknown\\\"}\"}"
+}

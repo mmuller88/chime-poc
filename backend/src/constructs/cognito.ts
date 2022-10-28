@@ -329,6 +329,7 @@ export class Cognito extends Construct {
               'chime:Connect',
               'chime:ListChannelMessages',
               'chime:ListChannelsModeratedByAppInstanceUser',
+              'chime:DescribeChannelModeratedByAppInstanceUser',
               'chime:SendChannelMessage',
             ],
             resources: [
