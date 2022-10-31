@@ -1,180 +1,168 @@
-import {
-  ListUsersInGroupCommand,
-  UserType,
-} from '@aws-sdk/client-cognito-identity-provider';
-import { useCallback, useEffect, useState } from 'react';
+import { ReactNode, useCallback, useEffect, useState } from 'react';
 import 'react-datepicker/dist/react-datepicker.css';
 
 import { useAuth } from '../providers/AuthProvider';
 import { useAwsClient } from '../providers/AwsClientProvider';
 // import { useRoute } from '../providers/RouteProvider';
-import { Channel, ChannelMetadata, CognitoUser } from '../types';
+import { Channel, ChannelMetadata } from '../types';
 // import Chat from './Chat';
 import './DirectCall.css';
 
 // import Config from '../utils/Config';
 import { InvocationType, InvokeCommand, LogType } from '@aws-sdk/client-lambda';
-import useMountedRef from '../hooks/useMountedRef';
 import { useRuntime } from '../providers/RuntimeProvider';
-import { DeleteAppointmentFunctionEvent } from '../types/lambda';
+import {
+  CreateAppointmentFunctionEvent,
+  DeleteAppointmentFunctionEvent,
+} from '../types/lambda';
 
 import {
-  ChannelModeratedByAppInstanceUserSummary,
-  ListChannelsModeratedByAppInstanceUserCommand,
+  ChannelSummary,
+  ListChannelsCommand,
 } from '@aws-sdk/client-chime-sdk-messaging';
 import { Message, MessagingSessionObserver } from 'amazon-chime-sdk-js';
-import { v4 as uuidv4 } from 'uuid';
+import dayjs from 'dayjs';
+import { AccountType } from '../constants';
+import useMountedRef from '../hooks/useMountedRef';
 import { useMessaging } from '../providers/MessagingProvider';
-import MeetingDoctorView from './MeetingDoctorView';
 
 // const REFRESH_INTERVAL = 1000;
 // const RETRIES = 1;
 // let timeoutId: ReturnType<typeof setTimeout>;
 
 export default function WaitingRoom(): JSX.Element {
-  // const { setRoute } = useRoute();
   const {
-    patientUserPoolGroupName,
-    cognitoUserPoolId,
+    createWaitingRoomFunctionArn,
     deleteAppointmentFunctionArn,
+    appInstanceArn,
+    createAppointmentFunctionArn,
   } = useRuntime();
-  const { cognitoClient, lambdaClient, messagingClient } = useAwsClient();
-  const { user, appInstanceUserArn } = useAuth();
-  // const [startDate, setStartDate] = useState(new Date());
-  const [patients, setPatients] = useState<CognitoUser[]>([]);
-  // const [loading, setLoading] = useState<boolean>(false);
-  // const [channelName, setChannelName] = useState<string | undefined>(undefined);
-  const mountedRef = useMountedRef();
-  // const cleanedUpMeetingIdsRef = useRef<Set<string>>(new Set());
-  const [showMeetingDoctorView, setShowMeetingDoctorView] = useState(false);
-  // const [channels, setChannels] = useState<Channel[]>();
-  const [channel, setChannel] = useState<Channel>();
+  const { lambdaClient } = useAwsClient();
+  const { user, appInstanceUserArn, accountType } = useAuth();
+  // const [channel, setChannel] = useState<Channel>();
+  const [channels, setChannels] = useState<Channel[]>();
   const { messagingSession } = useMessaging();
+  const { messagingClient } = useAwsClient();
+  const mountedRef = useMountedRef();
+  // const { setRoute } = useRoute();
 
-  const listChannels = useCallback(
-    async (channelName: string) => {
-      (async () => {
-        // console.log('listChannels');
-        try {
-          let channels: ChannelModeratedByAppInstanceUserSummary[] = [];
-          let nextToken: string | undefined;
-          do {
-            const data = await messagingClient.send(
-              new ListChannelsModeratedByAppInstanceUserCommand({
-                ChimeBearer: appInstanceUserArn,
-                NextToken: nextToken,
-              }),
-            );
-            console.log(`Channels=${JSON.stringify(data.Channels)}`);
-            console.log(`channelName=${channelName}`);
-            channels.push(
-              ...(data.Channels?.filter(
-                (channel) => channel.ChannelSummary?.Name === channelName,
-              ) || []),
-            );
-            nextToken = data.NextToken;
-          } while (nextToken);
-          if (!mountedRef.current) {
-            return;
-          }
+  const listChannels = useCallback(async () => {
+    (async () => {
+      try {
+        const channels: ChannelSummary[] = [];
+        let nextToken: string | undefined;
+        do {
+          const data = await messagingClient.send(
+            new ListChannelsCommand({
+              AppInstanceArn: appInstanceArn,
+              ChimeBearer: appInstanceUserArn,
+              NextToken: nextToken,
+            }),
+          );
+          channels.push(...(data.Channels || []));
+          nextToken = data.NextToken;
+        } while (nextToken);
+        if (!mountedRef.current) {
+          return;
+        }
 
-          // console.log(channels);
-          const newChannel = channels.map<Channel>(
-            (channel: ChannelModeratedByAppInstanceUserSummary) => {
-              const metadata: ChannelMetadata = JSON.parse(
-                channel.ChannelSummary?.Metadata!,
-              );
+        setChannels(
+          channels
+            .filter((channel) => {
+              const metadata: ChannelMetadata = JSON.parse(channel.Metadata!);
+              return metadata.type === 'waitingroom';
+            })
+            .map<Channel>((channel: ChannelSummary) => {
+              const metadata: ChannelMetadata = JSON.parse(channel.Metadata!);
               return {
                 appointmentTimestamp: new Date(metadata.appointmentTimestamp),
                 doctor: metadata.doctor,
                 patient: metadata.patient,
                 presenceMap: metadata.presenceMap,
-                summary: channel.ChannelSummary,
+                summary: channel,
                 sfnExecutionArn: metadata.sfnExecutionArn,
               } as Channel;
-            },
-          )?.[0];
-          if (newChannel) setChannel(newChannel);
-          // if (channel) setShowMeetingDoctorView(true);
-        } catch (error) {
-          console.error(error);
-        }
-      })();
-    },
-    [appInstanceUserArn, messagingClient, mountedRef],
-  );
-
-  useEffect(() => {
-    (async () => {
-      try {
-        const users: UserType[] = [];
-        let nextToken: string | undefined;
-        do {
-          const data = await cognitoClient.send(
-            new ListUsersInGroupCommand({
-              UserPoolId: cognitoUserPoolId,
-              GroupName: patientUserPoolGroupName,
-              NextToken: nextToken,
-            }),
-          );
-          users.push(...(data.Users || []));
-          nextToken = data.NextToken;
-        } while (nextToken);
-
-        if (!mountedRef.current) {
-          return false;
-        }
-
-        console.log('set Patients');
-        /**
-         * Convert
-         * Array: [{ Name: 'hello', value: 'example@email.com' }, { Name: 'email', value: 'example@email.com' }]
-         * to
-         * Object: { username: 'hello', email: 'example@email.com' }
-         */
-        setPatients(
-          users.map<CognitoUser>((user: UserType) => {
-            console.log(user.Username);
-            return {
-              username: user.Username,
-              attributes: user.Attributes?.reduce(
-                (previous, current) => ({
-                  ...previous,
-                  [current.Name!]: current.Value,
-                }),
-                {},
-              ),
-            } as CognitoUser;
-          }),
+            })
+            .sort(
+              (channel1: Channel, channel2: Channel) =>
+                channel1.appointmentTimestamp.getTime() -
+                channel2.appointmentTimestamp.getTime(),
+            ),
         );
       } catch (error) {
         console.error(error);
       }
     })();
-  }, [cognitoClient, mountedRef]);
+  }, [appInstanceUserArn, messagingClient, mountedRef]);
 
   const onClickWait = useCallback(async () => {
     // setLoading(true);
+    console.log('onClickWait');
 
-    const channelName = uuidv4();
+    const response = await lambdaClient.send(
+      new InvokeCommand({
+        FunctionName: createWaitingRoomFunctionArn,
+        InvocationType: InvocationType.RequestResponse,
+        LogType: LogType.None,
+        Payload: new TextEncoder().encode(
+          JSON.stringify({
+            // doctorUsername: user.username,
+            patientUsername: user.username,
+            timestamp: dayjs(Date.now()).second(0).millisecond(0).toISOString(),
+            // existingChannelName: channelName,
+          } as CreateAppointmentFunctionEvent),
+        ),
+      }),
+    );
 
-    setShowMeetingDoctorView(true);
+    console.log(response);
+  }, [lambdaClient, user]);
 
-    // When the backend creates multiple requests of UpdateChannel API simultaneously,
-    // the messaging session (WebSocket) sometimes does not receive all UPDATE_CHANNEL messages.
-    // Keep refreshing the list 15 seconds later from the previous listChannels() call.
+  const onClickLeave = useCallback(async () => {
+    console.log('onClickLeave');
 
-    // let currentRetry: number;
+    const response = await lambdaClient.send(
+      new InvokeCommand({
+        FunctionName: deleteAppointmentFunctionArn,
+        InvocationType: InvocationType.RequestResponse,
+        LogType: LogType.None,
+        Payload: new TextEncoder().encode(
+          JSON.stringify({
+            appInstanceUserArn,
+            channelArn: channels?.[0].summary.ChannelArn,
+          } as DeleteAppointmentFunctionEvent),
+        ),
+      }),
+    );
+    console.log(response);
+  }, [lambdaClient, user, channels]);
 
+  const onClickJoin = useCallback(async () => {
+    console.log('onClickJoin');
+
+    const channel = channels?.[0];
+
+    await lambdaClient.send(
+      new InvokeCommand({
+        FunctionName: createAppointmentFunctionArn,
+        InvocationType: InvocationType.RequestResponse,
+        LogType: LogType.None,
+        Payload: new TextEncoder().encode(
+          JSON.stringify({
+            doctorUsername: user.username,
+            patientUsername: channel?.patient.username,
+            timestamp: dayjs(Date.now()).second(0).millisecond(0).toISOString(),
+          } as CreateAppointmentFunctionEvent),
+        ),
+      }),
+    );
+
+    if (channel) onClickDelete(channel);
+  }, [lambdaClient, user, channels]);
+
+  useEffect(() => {
     const refreshChannels = () => {
-      // if (channel || currentRetry === 0) {
-      //   setLoading(false);
-      //   return;
-      // }
-      // clearTimeout(timeoutId);
-      listChannels(channelName);
-      // timeoutId = setTimeout(refreshChannels, REFRESH_INTERVAL);
-      // currentRetry--;
+      listChannels();
     };
 
     let observer: MessagingSessionObserver;
@@ -191,78 +179,146 @@ export default function WaitingRoom(): JSX.Element {
         },
       };
       messagingSession.addObserver(observer);
-      // currentRetry = RETRIES;
       refreshChannels();
     }
     return () => {
       messagingSession?.removeObserver(observer);
     };
-  }, [lambdaClient, patients, channel, user]);
+  }, [messagingSession, listChannels]);
 
-  const onCleanUpDoctor = useCallback(() => {
-    console.log('onCleanUpDoctor');
-    setShowMeetingDoctorView(false);
+  useEffect(() => {
+    let observer: MessagingSessionObserver;
+    if (messagingSession) {
+      observer = {
+        messagingSessionDidReceiveMessage: (message: Message) => {
+          console.log(message);
+          // if (message.type === 'CREATE_CHANNEL_MESSAGE' && !channel) {
+          //   const messageObj = JSON.parse(message.payload) as ChannelMessage;
+          //   if (
+          //     messageObj.Content === 'Sending%20a%20meeting%20invite' &&
+          //     messageObj.Sender?.Arn !== appInstanceUserArn
+          //   ) {
+          //     console.log('MeetingInvite!');
+          //     console.log(message);
+          //     const channelArn = messageObj.ChannelArn;
+          //     const metadata: MessageMetadata = JSON.parse(
+          //       messageObj.Metadata!,
+          //     );
+          //     const meetingId = metadata.meetingId;
+          //     console.log(`channelArn=${channelArn}`);
+          //     console.log(`meetingId=${meetingId}`);
+          //     getChannel(channelArn ?? '');
+          //   }
+          //   //
+          // }
+        },
+      };
+      messagingSession.addObserver(observer);
+      // refreshChannels();
+    }
+    return () => {
+      messagingSession?.removeObserver(observer);
+    };
+  }, [messagingSession]);
 
-    (async () => {
-      try {
-        console.log(channel);
-        await lambdaClient.send(
-          new InvokeCommand({
-            FunctionName: deleteAppointmentFunctionArn,
-            InvocationType: InvocationType.RequestResponse,
-            LogType: LogType.None,
-            Payload: new TextEncoder().encode(
-              JSON.stringify({
-                appInstanceUserArn,
-                channelArn: channel?.summary.ChannelArn,
-              } as DeleteAppointmentFunctionEvent),
-            ),
-          }),
-        );
+  const onClickDelete = useCallback(
+    (channel: Channel) => {
+      (async () => {
+        try {
+          await lambdaClient.send(
+            new InvokeCommand({
+              FunctionName: deleteAppointmentFunctionArn,
+              InvocationType: InvocationType.RequestResponse,
+              LogType: LogType.None,
+              Payload: new TextEncoder().encode(
+                JSON.stringify({
+                  appInstanceUserArn:
+                    accountType === AccountType.Patient
+                      ? appInstanceUserArn
+                      : `${appInstanceArn}/user/${channel?.patient.username}`,
+                  channelArn: channel.summary.ChannelArn,
+                } as DeleteAppointmentFunctionEvent),
+              ),
+            }),
+          );
 
-        setChannel(undefined);
-      } catch (error: any) {
-        console.error(error);
-      } finally {
-        // setRoute('AppointmentList');
-        // loadingRef.current = false;
-      }
-    })();
-  }, [channel]);
+          await listChannels();
+        } catch (error: any) {
+          console.error(error);
+        } finally {
+        }
+      })();
+    },
+    [appInstanceUserArn, lambdaClient],
+  );
 
-  // const onCleanUpPatient = useCallback(() => {
-  //   if (meetingId) {
-  //     cleanedUpMeetingIdsRef.current.add(meetingId);
-  //     setMeetingId(undefined);
-  //   }
-  // }, [meetingId]);
+  const createList = (channels?: Channel[]): ReactNode => {
+    if (!channels?.length) {
+      return <></>;
+    }
+    return (
+      <>
+        <div className="AppointmentList__listTitle">Waiting Rooms</div>
+        <ul className="AppointmentList__list">
+          {channels.map((channel: Channel) => (
+            <li
+              className="AppointmentList__listItem"
+              key={channel.summary.ChannelArn}
+            >
+              <div className="AppointmentList__nameContainer">
+                <div className="AppointmentList__name">
+                  {'Patient: ' + channel.patient.name}
+                </div>
+              </div>
+              <div className="AppointmentList__buttonContainer">
+                <button
+                  className="AppointmentList__button"
+                  onClick={() => {
+                    onClickDelete(channel);
+                  }}
+                >
+                  Delete
+                </button>
+              </div>
+            </li>
+          ))}
+        </ul>
+      </>
+    );
+  };
 
   return (
     <div className="DirectCall">
       <div className="DirectCall__form">
-        <button className="AppointmentView__callButton" onClick={onClickWait}>
-          Wait
-        </button>
+        {accountType === AccountType.Patient && (
+          <>
+            {channels?.length === 0 && (
+              <button
+                className="AppointmentView__callButton"
+                onClick={onClickWait}
+              >
+                Wait
+              </button>
+            )}
+            {(channels?.length ?? 0) > 0 && (
+              <button
+                className="AppointmentView__callButton"
+                onClick={onClickLeave}
+              >
+                Leave
+              </button>
+            )}
+          </>
+        )}
+        {accountType === AccountType.Doctor && (
+          <button className="AppointmentView__callButton" onClick={onClickJoin}>
+            Join
+          </button>
+        )}
+        <div className="AppointmentList__listContainer">
+          {createList(channels)}
+        </div>
       </div>
-      {
-        <>
-          {/* {channel && <Chat channel={channel} />} */}
-          {showMeetingDoctorView && channel && (
-            <MeetingDoctorView channel={channel} onCleanUp={onCleanUpDoctor} />
-          )}
-          {/*
-          {meetingId && channel && (
-            // We must pass the meeting ID as a key because MeetingPatientView does not support the case when
-            // only the meeting ID prop changes. Providing a unique key will mount a new copy of MeetingPatientView.
-            <MeetingPatientView
-              key={meetingId}
-              channel={channel}
-              meetingId={meetingId}
-              onCleanUp={onCleanUpPatient}
-            />
-          )} */}
-        </>
-      }
     </div>
   );
 }

@@ -14,6 +14,7 @@ const messagingClient = new ChimeSDKMessagingClient({ region: AWS_REGION });
 const sfnClient = new SFNClient({ region: AWS_REGION });
 
 exports.handler = async (event: DeleteAppointmentFunctionEvent) => {
+  console.log(`event=${JSON.stringify(event)}`);
   const { channelArn, appInstanceUserArn } = event;
 
   try {
@@ -21,20 +22,22 @@ exports.handler = async (event: DeleteAppointmentFunctionEvent) => {
       new DescribeChannelCommand({
         ChannelArn: channelArn,
         ChimeBearer: appInstanceUserArn,
-      })
+      }),
     );
-    const metadata: ChannelMetadata = JSON.parse(channelData.Channel!.Metadata!);
+    const metadata: ChannelMetadata = JSON.parse(
+      channelData.Channel!.Metadata!,
+    );
     await messagingClient.send(
       new DeleteChannelCommand({
         ChannelArn: channelArn,
         ChimeBearer: appInstanceUserArn,
-      })
+      }),
     );
     if (metadata.sfnExecutionArn) {
       await sfnClient.send(
         new StopExecutionCommand({
           executionArn: metadata.sfnExecutionArn,
-        })
+        }),
       );
     }
   } catch (error: any) {

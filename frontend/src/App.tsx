@@ -33,6 +33,7 @@ function App() {
                     AppointmentView: <AppointmentView />,
                     DirectCall: <DirectCall />,
                     CreateAppointment: <CreateAppointment />,
+                    WaitingRoom: <WaitingRoom />,
                   }}
                 />
               </MessagingProvider>
@@ -49,7 +50,16 @@ function App() {
             </Widget>
             <Widget title="Waiting Room" number={4}>
               <MessagingProvider>
-                <WaitingRoom />
+                <RouteProvider
+                  routes={{
+                    AppointmentList: <AppointmentList />,
+                    AppointmentView: <AppointmentView />,
+                    DirectCall: <DirectCall />,
+                    CreateAppointment: <CreateAppointment />,
+                    WaitingRoom: <WaitingRoom />,
+                  }}
+                  defaultRoute={<WaitingRoom />}
+                />
               </MessagingProvider>
             </Widget>
           </AwsClientProvider>

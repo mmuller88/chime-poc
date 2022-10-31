@@ -44,7 +44,7 @@ const REMOTE_ATTENDEE_PRESENCE_CHECK_INTERVAL = 5000; // 5 seconds.
 const PING_INTERVAL = 3000; // 3 seconds.
 
 export default function AppointmentView(): JSX.Element {
-  const { params, setRoute } = useRoute();
+  const { params, setRoute, backRouteName } = useRoute();
   const { deleteAppointmentFunctionArn } = useRuntime();
   const { appInstanceUserArn, user, accountType } = useAuth();
   const { messagingClient, lambdaClient } = useAwsClient();
@@ -135,7 +135,7 @@ export default function AppointmentView(): JSX.Element {
     accountType,
     user.username,
     channel.patient.username,
-    channel.doctor.username,
+    channel.doctor?.username,
   ]);
 
   useEffect(() => {
@@ -208,7 +208,7 @@ export default function AppointmentView(): JSX.Element {
       }
     }
     if (accountType === AccountType.Patient) {
-      if (!presenceMap.current[channel.doctor.username]) {
+      if (channel.doctor && !presenceMap.current[channel.doctor.username]) {
         return;
       }
       if (
@@ -236,7 +236,7 @@ export default function AppointmentView(): JSX.Element {
   useInterval(trackRemotePresence, REMOTE_ATTENDEE_PRESENCE_CHECK_INTERVAL);
 
   const onClickBack = useCallback(() => {
-    setRoute('AppointmentList');
+    setRoute(backRouteName ?? 'AppointmentList');
   }, [setRoute]);
 
   const onClickDelete = useCallback(() => {
@@ -262,7 +262,7 @@ export default function AppointmentView(): JSX.Element {
       } catch (error: any) {
         console.error(error);
       } finally {
-        setRoute('AppointmentList');
+        setRoute(backRouteName ?? 'AppointmentList');
         loadingRef.current = false;
       }
     })();
@@ -304,7 +304,7 @@ export default function AppointmentView(): JSX.Element {
                 <span className="AppointmentView__title">
                   {accountType === AccountType.Doctor
                     ? channel.patient.name
-                    : channel.doctor.name}
+                    : channel.doctor?.name ?? 'Unknown'}
                 </span>
                 <span className="AppointmentView__icon">
                   <svg
@@ -346,13 +346,12 @@ export default function AppointmentView(): JSX.Element {
                 sameElse: 'L LT',
               })}
             />
-            {accountType === AccountType.Doctor && (
-              <PopOverItem
-                as="button"
-                onClick={onClickDelete}
-                children={<span>{t('AppointmentView.delete')}</span>}
-              />
-            )}
+
+            <PopOverItem
+              as="button"
+              onClick={onClickDelete}
+              children={<span>{t('AppointmentView.delete')}</span>}
+            />
           </PopOver>
         </div>
         {accountType === AccountType.Doctor && (

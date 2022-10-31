@@ -46,6 +46,7 @@ export class CdkStack extends cdk.Stack {
       CognitoUserPoolClientId: cognito.cognitoUserPoolClientId,
       CognitoUserPoolId: cognito.cognitoUserPoolId,
       CreateAppointmentFunctionArn: appointment.createAppointmentFunctionArn,
+      CreateWaitingRoomFunctionArn: appointment.createWaitingRoomFunctionArn,
       CreateAttendeeFunctionArn: meeting.createAttendeeFunctionArn,
       CreateMeetingFunctionArn: meeting.createMeetingFunctionArn,
       DeleteAppointmentFunctionArn: appointment.deleteAppointmentFunctionArn,

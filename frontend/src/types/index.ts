@@ -13,7 +13,8 @@ export interface MessageWrapper {
 
 export interface ChannelMetadata {
   appointmentTimestamp: Date;
-  doctor: {
+  type: 'appointment' | 'waitingroom';
+  doctor?: {
     username: string;
     name: string;
     email: string;
@@ -84,7 +85,10 @@ export interface Channel {
 
 export interface MeetingAPI {
   createMeeting: (channel: Channel) => Promise<MeetingAPIResponse>;
-  createAttendee: (channel: Channel, meetingId: string) => Promise<MeetingAPIResponse>;
+  createAttendee: (
+    channel: Channel,
+    meetingId: string,
+  ) => Promise<MeetingAPIResponse>;
 }
 
 export interface MeetingAPIResponse {

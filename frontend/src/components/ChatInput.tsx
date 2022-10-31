@@ -1,11 +1,11 @@
 import { ChangeEvent, KeyboardEvent, useRef, useState } from 'react';
-import { v4 as uuidv4 } from 'uuid';
 import { useTranslation } from 'react-i18next';
+import { v4 as uuidv4 } from 'uuid';
 
-import './ChatInput.css';
-import { Channel, MessageWrapper } from '../types';
-import { useAuth } from '../providers/AuthProvider';
 import { AccountType } from '../constants';
+import { useAuth } from '../providers/AuthProvider';
+import { Channel, MessageWrapper } from '../types';
+import './ChatInput.css';
 
 export default function ChatInput({
   channel,
@@ -57,7 +57,10 @@ export default function ChatInput({
         onChange={onChange}
         onKeyDown={onKeyDown}
         placeholder={t('ChatInput.message', {
-          recipient: accountType === AccountType.Doctor ? channel.patient.name : channel.doctor.name,
+          recipient:
+            accountType === AccountType.Doctor
+              ? channel.patient.name
+              : channel.doctor?.name ?? 'Unknown',
         })}
         value={value}
         rows={1}

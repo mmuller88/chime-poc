@@ -64,6 +64,7 @@ exports.handler = async (event: CreateAppointmentFunctionEvent) => {
     const doctor: CognitoUser = getCognitoUser(doctorUsername, doctorData);
     const patient: CognitoUser = getCognitoUser(patientUsername, patientData);
     const metadata: ChannelMetadata = {
+      type: 'appointment',
       appointmentTimestamp: timestamp,
       doctor: {
         username: doctor.username,

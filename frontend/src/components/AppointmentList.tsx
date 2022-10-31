@@ -53,6 +53,12 @@ export default function AppointmentList(): JSX.Element {
 
         setChannels(
           channels
+            .filter((channel) => {
+              const metadata: ChannelMetadata = JSON.parse(
+                channel.ChannelSummary?.Metadata!,
+              );
+              return metadata.type === 'appointment';
+            })
             .map<Channel>(
               (channel: ChannelModeratedByAppInstanceUserSummary) => {
                 const metadata: ChannelMetadata = JSON.parse(

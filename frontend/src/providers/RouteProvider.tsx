@@ -4,12 +4,18 @@ type RouteName =
   | 'CreateAppointment'
   | 'AppointmentList'
   | 'AppointmentView'
+  | 'WaitingRoom'
   | 'DirectCall';
 type Routes = Record<RouteName, ReactNode>;
 
 interface RouteProviderValue {
-  setRoute: (routeName: RouteName, params?: Record<string, any>) => void;
+  setRoute: (
+    routeName: RouteName,
+    params?: Record<string, any>,
+    backRouteName?: RouteName,
+  ) => void;
   params: Record<string, any>;
+  backRouteName?: RouteName;
 }
 
 const RouteProviderContext = React.createContext<
@@ -34,17 +40,24 @@ export default function RouteProvider({
   const [routeInfo, setRouteInfo] = useState<{
     node: ReactNode;
     params?: Record<string, any>;
+    backRouteName?: RouteName;
   }>({
     node: defaultRoute ?? routes.AppointmentList,
   });
   const value = {
-    setRoute: (routeName: RouteName, params?: Record<string, any>) => {
+    setRoute: (
+      routeName: RouteName,
+      params?: Record<string, any>,
+      backRouteName?: RouteName,
+    ) => {
       setRouteInfo({
         node: routes[routeName],
         params,
+        backRouteName,
       });
     },
     params: routeInfo.params || {},
+    backRouteName: routeInfo.backRouteName,
   };
   useEffect(() => {
     return () => {

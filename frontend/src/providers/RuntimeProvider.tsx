@@ -12,6 +12,7 @@ interface RuntimeValue {
   makeOutboundCallFunctionArn: string;
   patientUserPoolGroupName: string;
   createAppointmentFunctionArn: string;
+  createWaitingRoomFunctionArn: string;
 }
 
 const RuntimeContext = React.createContext<RuntimeValue | undefined>(undefined);
@@ -48,6 +49,7 @@ export default function RuntimeProvider({
           cleanRuntimeContext.CreateAttendeeFunctionArn &&
           cleanRuntimeContext.CreateMeetingFunctionArn &&
           cleanRuntimeContext.DeleteAppointmentFunctionArn &&
+          cleanRuntimeContext.CreateWaitingRoomFunctionArn &&
           cleanRuntimeContext.MakeOutboundCallFunctionArn &&
           cleanRuntimeContext.PatientUserPoolGroupName &&
           cleanRuntimeContext.CreateAppointmentFunctionArn
@@ -73,6 +75,7 @@ export default function RuntimeProvider({
       createAttendeeFunctionArn: runtimeContext.CreateAttendeeFunctionArn,
       createMeetingFunctionArn: runtimeContext.CreateMeetingFunctionArn,
       deleteAppointmentFunctionArn: runtimeContext.DeleteAppointmentFunctionArn,
+      createWaitingRoomFunctionArn: runtimeContext.CreateWaitingRoomFunctionArn,
       makeOutboundCallFunctionArn: runtimeContext.MakeOutboundCallFunctionArn,
       patientUserPoolGroupName: runtimeContext.PatientUserPoolGroupName,
       createAppointmentFunctionArn: runtimeContext.CreateAppointmentFunctionArn,

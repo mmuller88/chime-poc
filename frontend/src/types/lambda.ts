@@ -5,6 +5,11 @@ export interface CreateAppointmentFunctionEvent {
   existingChannelName: string;
 }
 
+export interface CreateWaitingRoomFunctionEvent {
+  patientUsername: string;
+  timestamp: string;
+}
+
 export interface DeleteAppointmentFunctionEvent {
   channelArn: string;
   appInstanceUserArn: string;

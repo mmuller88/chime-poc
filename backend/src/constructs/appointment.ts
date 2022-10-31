@@ -17,12 +17,16 @@ export interface AppointmentProps {
 
 export class Appointment extends Construct {
   readonly createAppointmentFunctionArn: string;
+  readonly createWaitingRoomFunctionArn: string;
   readonly deleteAppointmentFunctionArn: string;
 
   constructor(scope: Construct, id: string, private props: AppointmentProps) {
     super(scope, id);
     const createAppointmentFunction = this.createCreateAppointmentFunction();
     this.createAppointmentFunctionArn = createAppointmentFunction.functionArn;
+
+    const createWaitingRoomFunction = this.createCreateWaitingRoomFunction();
+    this.createWaitingRoomFunctionArn = createWaitingRoomFunction.functionArn;
 
     const deleteAppointmentFunction = this.createDeleteAppointmentFunction();
     this.deleteAppointmentFunctionArn = deleteAppointmentFunction.functionArn;
@@ -58,9 +62,9 @@ export class Appointment extends Construct {
             new iam.PolicyStatement({
               actions: ['cognito-idp:AdminGetUser'],
               resources: [
-                `arn:aws:cognito-idp:${cdk.Stack.of(this).region}:${cdk.Stack.of(this).account}:userpool/${
-                  this.props.cognitoUserPoolId
-                }`,
+                `arn:aws:cognito-idp:${cdk.Stack.of(this).region}:${
+                  cdk.Stack.of(this).account
+                }:userpool/${this.props.cognitoUserPoolId}`,
               ],
               effect: iam.Effect.ALLOW,
             }),
@@ -77,7 +81,9 @@ export class Appointment extends Construct {
         }),
       },
       managedPolicies: [
-        iam.ManagedPolicy.fromAwsManagedPolicyName('service-role/AWSLambdaBasicExecutionRole'),
+        iam.ManagedPolicy.fromAwsManagedPolicyName(
+          'service-role/AWSLambdaBasicExecutionRole',
+        ),
       ],
     });
     return new lambdaNodeJs.NodejsFunction(this, 'CreateAppointmentFunction', {
@@ -87,6 +93,65 @@ export class Appointment extends Construct {
         CHANNEL_FLOW_ARN: this.props.channelFlowArn,
         COGNITO_USER_POOL_ID: this.props.cognitoUserPoolId,
         STATE_MACHINE_ARN: this.props.stateMachineArn,
+      },
+      handler: 'handler',
+      role,
+      runtime: lambda.Runtime.NODEJS_14_X,
+      timeout: cdk.Duration.seconds(30),
+    });
+  };
+
+  private createCreateWaitingRoomFunction = (): lambda.Function => {
+    const role = new iam.Role(this, 'CreateWaitingRoomFunctionRole', {
+      assumedBy: new iam.ServicePrincipal('lambda.amazonaws.com'),
+      inlinePolicies: {
+        MessagingPolicy: new iam.PolicyDocument({
+          statements: [
+            new iam.PolicyStatement({
+              actions: [
+                'chime:AssociateChannelFlow',
+                'chime:BatchCreateChannelMembership',
+                'chime:CreateChannel',
+                'chime:CreateChannelModerator',
+                'chime:DeleteChannel',
+                'chime:DescribeChannel',
+                'chime:UpdateChannel',
+              ],
+              resources: [
+                `${this.props.appInstanceArn}/user/*`,
+                `${this.props.appInstanceArn}/channel/*`,
+                `${this.props.appInstanceArn}/channel-flow/*`,
+              ],
+              effect: iam.Effect.ALLOW,
+            }),
+          ],
+        }),
+        CognitoPolicy: new iam.PolicyDocument({
+          statements: [
+            new iam.PolicyStatement({
+              actions: ['cognito-idp:AdminGetUser'],
+              resources: [
+                `arn:aws:cognito-idp:${cdk.Stack.of(this).region}:${
+                  cdk.Stack.of(this).account
+                }:userpool/${this.props.cognitoUserPoolId}`,
+              ],
+              effect: iam.Effect.ALLOW,
+            }),
+          ],
+        }),
+      },
+      managedPolicies: [
+        iam.ManagedPolicy.fromAwsManagedPolicyName(
+          'service-role/AWSLambdaBasicExecutionRole',
+        ),
+      ],
+    });
+    return new lambdaNodeJs.NodejsFunction(this, 'CreateWaitingRoomFunction', {
+      entry: './lambda/src/create-waiting-room.ts',
+      environment: {
+        APP_INSTANCE_ARN: this.props.appInstanceArn,
+        CHANNEL_FLOW_ARN: this.props.channelFlowArn,
+        COGNITO_USER_POOL_ID: this.props.cognitoUserPoolId,
       },
       handler: 'handler',
       role,
@@ -123,7 +188,9 @@ export class Appointment extends Construct {
         }),
       },
       managedPolicies: [
-        iam.ManagedPolicy.fromAwsManagedPolicyName('service-role/AWSLambdaBasicExecutionRole'),
+        iam.ManagedPolicy.fromAwsManagedPolicyName(
+          'service-role/AWSLambdaBasicExecutionRole',
+        ),
       ],
     });
     return new lambdaNodeJs.NodejsFunction(this, 'DeleteAppointmentFunction', {

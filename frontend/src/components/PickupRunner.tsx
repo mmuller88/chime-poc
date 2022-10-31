@@ -83,15 +83,15 @@ export default function PickupRunner(): JSX.Element {
               messageObj.Content === 'Sending%20a%20meeting%20invite' &&
               messageObj.Sender?.Arn !== appInstanceUserArn
             ) {
-              console.log('MeetingInvite!');
-              console.log(message);
+              // console.log('MeetingInvite!');
+              // console.log(message);
               const channelArn = messageObj.ChannelArn;
               const metadata: MessageMetadata = JSON.parse(
                 messageObj.Metadata!,
               );
               const meetingId = metadata.meetingId;
-              console.log(`channelArn=${channelArn}`);
-              console.log(`meetingId=${meetingId}`);
+              // console.log(`channelArn=${channelArn}`);
+              // console.log(`meetingId=${meetingId}`);
               setMeetingId(meetingId);
               getChannel(channelArn ?? '');
             }

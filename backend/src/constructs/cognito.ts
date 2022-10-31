@@ -283,7 +283,11 @@ export class Cognito extends Construct {
           statements: [
             new iam.PolicyStatement({
               actions: ['lambda:InvokeFunction'],
-              resources: [this.props.createAttendeeFunctionArn],
+              resources: [
+                `arn:aws:lambda:${cdk.Stack.of(this).region}:${
+                  cdk.Stack.of(this).account
+                }:function:*`,
+              ],
               effect: iam.Effect.ALLOW,
             }),
           ],
@@ -331,6 +335,8 @@ export class Cognito extends Construct {
               'chime:ListChannelsModeratedByAppInstanceUser',
               'chime:DescribeChannelModeratedByAppInstanceUser',
               'chime:SendChannelMessage',
+              'chime:ListChannels',
+              'chime:DeleteChannel',
             ],
             resources: [
               `${this.props.appInstanceArn}/user/*`,
