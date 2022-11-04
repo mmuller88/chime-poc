@@ -56,7 +56,7 @@ project.tsconfigDev?.addInclude('backend/**/*.ts');
 
 project.synth();
 
-const cdkVersion = '2.45.0';
+const cdkVersion = '2.50.0';
 const backend = new pj.awscdk.AwsCdkTypeScriptApp({
   defaultReleaseBranch: 'main',
   outdir: 'backend',

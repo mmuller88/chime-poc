@@ -11,6 +11,7 @@ import './index.css';
 import './localization';
 import AuthProvider from './providers/AuthProvider';
 import AwsClientProvider from './providers/AwsClientProvider';
+import CallProvider from './providers/CallProvider';
 import MessagingProvider from './providers/MessagingProvider';
 import RouteProvider from './providers/RouteProvider';
 import RuntimeProvider from './providers/RuntimeProvider';
@@ -25,43 +26,42 @@ function App() {
       <RuntimeProvider>
         <AuthProvider>
           <AwsClientProvider>
-            <Widget title="Original" number={1}>
-              <MessagingProvider>
-                <RouteProvider
-                  routes={{
-                    AppointmentList: <AppointmentList />,
-                    AppointmentView: <AppointmentView />,
-                    DirectCall: <DirectCall />,
-                    CreateAppointment: <CreateAppointment />,
-                    WaitingRoom: <WaitingRoom />,
-                  }}
-                />
-              </MessagingProvider>
-            </Widget>
-            <Widget title="Direct Call" number={2}>
-              <MessagingProvider>
-                <DirectCall />
-              </MessagingProvider>
-            </Widget>
-            <Widget title="Pickup Runner" number={3}>
-              <MessagingProvider>
-                <PickupRunner />
-              </MessagingProvider>
-            </Widget>
-            <Widget title="Waiting Room" number={4}>
-              <MessagingProvider>
-                <RouteProvider
-                  routes={{
-                    AppointmentList: <AppointmentList />,
-                    AppointmentView: <AppointmentView />,
-                    DirectCall: <DirectCall />,
-                    CreateAppointment: <CreateAppointment />,
-                    WaitingRoom: <WaitingRoom />,
-                  }}
-                  defaultRoute={<WaitingRoom />}
-                />
-              </MessagingProvider>
-            </Widget>
+            <MessagingProvider>
+              <CallProvider>
+                <Widget title="Original" number={1}>
+                  <RouteProvider
+                    routes={{
+                      AppointmentList: <AppointmentList />,
+                      AppointmentView: <AppointmentView />,
+                      DirectCall: <DirectCall />,
+                      CreateAppointment: <CreateAppointment />,
+                      WaitingRoom: <WaitingRoom />,
+                    }}
+                  />
+                  \{' '}
+                </Widget>
+                <Widget title="Direct Call" number={2}>
+                  <DirectCall />
+                </Widget>
+                <Widget title="Pickup Runner" number={3}>
+                  <PickupRunner />
+                </Widget>
+                <Widget title="Waiting Room" number={4}>
+                  <MessagingProvider>
+                    <RouteProvider
+                      routes={{
+                        AppointmentList: <AppointmentList />,
+                        AppointmentView: <AppointmentView />,
+                        DirectCall: <DirectCall />,
+                        CreateAppointment: <CreateAppointment />,
+                        WaitingRoom: <WaitingRoom />,
+                      }}
+                      defaultRoute={<WaitingRoom />}
+                    />
+                  </MessagingProvider>
+                </Widget>
+              </CallProvider>
+            </MessagingProvider>
           </AwsClientProvider>
         </AuthProvider>
       </RuntimeProvider>

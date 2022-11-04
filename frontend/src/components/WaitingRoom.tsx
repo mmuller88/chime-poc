@@ -24,7 +24,9 @@ import { Message, MessagingSessionObserver } from 'amazon-chime-sdk-js';
 import dayjs from 'dayjs';
 import { AccountType } from '../constants';
 import useMountedRef from '../hooks/useMountedRef';
+import { useCall } from '../providers/CallProvider';
 import { useMessaging } from '../providers/MessagingProvider';
+import MeetingDoctorView from './MeetingDoctorView';
 
 // const REFRESH_INTERVAL = 1000;
 // const RETRIES = 1;
@@ -35,7 +37,6 @@ export default function WaitingRoom(): JSX.Element {
     createWaitingRoomFunctionArn,
     deleteAppointmentFunctionArn,
     appInstanceArn,
-    createAppointmentFunctionArn,
   } = useRuntime();
   const { lambdaClient } = useAwsClient();
   const { user, appInstanceUserArn, accountType } = useAuth();
@@ -44,6 +45,8 @@ export default function WaitingRoom(): JSX.Element {
   const { messagingSession } = useMessaging();
   const { messagingClient } = useAwsClient();
   const mountedRef = useMountedRef();
+  const { createCall, callChannel, deleteCall } = useCall();
+  // const { createCall, callChannel, deleteCall } = useChannelQuery();
   // const { setRoute } = useRoute();
 
   const listChannels = useCallback(async () => {
@@ -142,20 +145,18 @@ export default function WaitingRoom(): JSX.Element {
 
     const channel = channels?.[0];
 
-    await lambdaClient.send(
-      new InvokeCommand({
-        FunctionName: createAppointmentFunctionArn,
-        InvocationType: InvocationType.RequestResponse,
-        LogType: LogType.None,
-        Payload: new TextEncoder().encode(
-          JSON.stringify({
-            doctorUsername: user.username,
-            patientUsername: channel?.patient.username,
-            timestamp: dayjs(Date.now()).second(0).millisecond(0).toISOString(),
-          } as CreateAppointmentFunctionEvent),
-        ),
-      }),
-    );
+    if (!channel) {
+      return;
+    }
+
+    if (!user.username) {
+      return;
+    }
+
+    createCall({
+      doctorUsername: user.username,
+      patientUsername: channel.patient.username,
+    });
 
     if (channel) onClickDelete(channel);
   }, [lambdaClient, user, channels]);
@@ -287,6 +288,11 @@ export default function WaitingRoom(): JSX.Element {
     );
   };
 
+  const onCleanUpDoctor = useCallback(async () => {
+    console.log('onCleanUpDoctor');
+    await deleteCall();
+  }, [callChannel]);
+
   return (
     <div className="DirectCall">
       <div className="DirectCall__form">
@@ -314,6 +320,12 @@ export default function WaitingRoom(): JSX.Element {
           <button className="AppointmentView__callButton" onClick={onClickJoin}>
             Join
           </button>
+        )}
+        {callChannel && (
+          <MeetingDoctorView
+            channel={callChannel}
+            onCleanUp={onCleanUpDoctor}
+          />
         )}
         <div className="AppointmentList__listContainer">
           {createList(channels)}

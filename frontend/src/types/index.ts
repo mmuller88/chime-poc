@@ -13,7 +13,7 @@ export interface MessageWrapper {
 
 export interface ChannelMetadata {
   appointmentTimestamp: Date;
-  type: 'appointment' | 'waitingroom';
+  type: ChannelType;
   doctor?: {
     username: string;
     name: string;
@@ -35,6 +35,11 @@ export interface ChannelMetadata {
   // When deleting this channel, use "sfnExecutionArn" to stop the state machine execution
   // scheduled for sending an SMS message.
   sfnExecutionArn?: string;
+}
+
+export enum ChannelType {
+  Appointment = 'appointment',
+  WaitingRoom = 'waitingroom',
 }
 
 export interface UpdateChannelMetadata extends ChannelMetadata {

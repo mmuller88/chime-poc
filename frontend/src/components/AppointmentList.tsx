@@ -1,21 +1,16 @@
-import {
-  ChannelModeratedByAppInstanceUserSummary,
-  ListChannelsModeratedByAppInstanceUserCommand,
-} from '@aws-sdk/client-chime-sdk-messaging';
 import { Message, MessagingSessionObserver } from 'amazon-chime-sdk-js';
 import dayjs from 'dayjs';
 import calendar from 'dayjs/plugin/calendar';
 import localizedFormat from 'dayjs/plugin/localizedFormat';
-import { ReactNode, useCallback, useEffect, useState } from 'react';
+import { ReactNode, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { AccountType, Presence } from '../constants';
-import useMountedRef from '../hooks/useMountedRef';
+import useChannelQuery from '../hooks/useChannelQuery';
 import { useAuth } from '../providers/AuthProvider';
-import { useAwsClient } from '../providers/AwsClientProvider';
 import { useMessaging } from '../providers/MessagingProvider';
 import { useRoute } from '../providers/RouteProvider';
-import { Channel, ChannelMetadata } from '../types';
+import { Channel } from '../types';
 import './AppointmentList.css';
 
 dayjs.extend(calendar);
@@ -24,67 +19,11 @@ dayjs.extend(localizedFormat);
 const REFRESH_INTERVAL = 15000;
 
 export default function AppointmentList(): JSX.Element {
-  const { messagingClient } = useAwsClient();
-  const { appInstanceUserArn, accountType } = useAuth();
+  const { accountType } = useAuth();
   const { setRoute } = useRoute();
-  const [channels, setChannels] = useState<Channel[]>();
   const { messagingSession } = useMessaging();
-  const mountedRef = useMountedRef();
   const { t } = useTranslation();
-
-  const listChannels = useCallback(async () => {
-    (async () => {
-      try {
-        const channels: ChannelModeratedByAppInstanceUserSummary[] = [];
-        let nextToken: string | undefined;
-        do {
-          const data = await messagingClient.send(
-            new ListChannelsModeratedByAppInstanceUserCommand({
-              ChimeBearer: appInstanceUserArn,
-              NextToken: nextToken,
-            }),
-          );
-          channels.push(...(data.Channels || []));
-          nextToken = data.NextToken;
-        } while (nextToken);
-        if (!mountedRef.current) {
-          return;
-        }
-
-        setChannels(
-          channels
-            .filter((channel) => {
-              const metadata: ChannelMetadata = JSON.parse(
-                channel.ChannelSummary?.Metadata!,
-              );
-              return metadata.type === 'appointment';
-            })
-            .map<Channel>(
-              (channel: ChannelModeratedByAppInstanceUserSummary) => {
-                const metadata: ChannelMetadata = JSON.parse(
-                  channel.ChannelSummary?.Metadata!,
-                );
-                return {
-                  appointmentTimestamp: new Date(metadata.appointmentTimestamp),
-                  doctor: metadata.doctor,
-                  patient: metadata.patient,
-                  presenceMap: metadata.presenceMap,
-                  summary: channel.ChannelSummary,
-                  sfnExecutionArn: metadata.sfnExecutionArn,
-                } as Channel;
-              },
-            )
-            .sort(
-              (channel1: Channel, channel2: Channel) =>
-                channel1.appointmentTimestamp.getTime() -
-                channel2.appointmentTimestamp.getTime(),
-            ),
-        );
-      } catch (error) {
-        console.error(error);
-      }
-    })();
-  }, [appInstanceUserArn, messagingClient, mountedRef]);
+  const { channels, listChannels } = useChannelQuery();
 
   useEffect(() => {
     // When the backend creates multiple requests of UpdateChannel API simultaneously,
@@ -93,7 +32,7 @@ export default function AppointmentList(): JSX.Element {
     let timeoutId: ReturnType<typeof setTimeout>;
     const refreshChannels = () => {
       clearTimeout(timeoutId);
-      listChannels();
+      listChannels('appointment');
       timeoutId = setTimeout(refreshChannels, REFRESH_INTERVAL);
     };
 

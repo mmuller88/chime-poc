@@ -286,55 +286,9 @@ export default function DirectCall(): JSX.Element {
   //   }
   // }, [meetingId]);
 
-  const onSubmit = useCallback(
-    async (event) => {
-      event.preventDefault();
-      try {
-        setLoading(true);
-        console.log(`selectedPatientUsername=${selectedPatientUsername}`);
-        const patient = patients.find(
-          (patient: CognitoUser) =>
-            patient.username === selectedPatientUsername,
-        );
-        if (!patient) {
-          throw new Error(`Patient ${selectedPatientUsername} does not exist.`);
-        }
-        // await lambdaClient.send(
-        //   new InvokeCommand({
-        //     FunctionName: createAppointmentFunctionArn,
-        //     InvocationType: InvocationType.RequestResponse,
-        //     LogType: LogType.None,
-        //     Payload: new TextEncoder().encode(
-        //       JSON.stringify({
-        //         doctorUsername: user.username,
-        //         patientUsername: patient.username,
-        //         timestamp: dayjs(startDate)
-        //           .second(0)
-        //           .millisecond(0)
-        //           .toISOString(),
-        //       } as CreateAppointmentFunctionEvent),
-        //     ),
-        //   }),
-        // );
-        // setRoute('AppointmentList');
-      } catch (error) {
-        console.error(error);
-        setLoading(false);
-      }
-    },
-    [
-      lambdaClient,
-      patients,
-      selectedPatientUsername,
-      // setRoute,
-      // startDate,
-      user,
-    ],
-  );
-
   return (
     <div className="DirectCall">
-      <form className="DirectCall__form" onSubmit={onSubmit}>
+      <form className="DirectCall__form">
         <div className="DirectCall__selectContainer">
           <label>Patient</label>
           <div className="DirectCall__selectAndArrow">

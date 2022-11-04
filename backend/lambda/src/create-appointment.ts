@@ -22,7 +22,11 @@ import {
 import { v4 as uuidv4 } from 'uuid';
 
 import { Presence } from '../../../frontend/src/constants';
-import { ChannelMetadata, CognitoUser } from '../../../frontend/src/types';
+import {
+  ChannelMetadata,
+  ChannelType,
+  CognitoUser,
+} from '../../../frontend/src/types';
 import { CreateAppointmentFunctionEvent } from '../../../frontend/src/types/lambda';
 import { getCognitoUser } from './utils';
 
@@ -37,6 +41,12 @@ const {
 const messagingClient = new ChimeSDKMessagingClient({ region: AWS_REGION });
 const cognitoClient = new CognitoIdentityProviderClient({ region: AWS_REGION });
 const sfnClient = new SFNClient({ region: AWS_REGION });
+const headers = {
+  'Access-Control-Allow-Headers': 'Authorization',
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Allow-Credentials': 'true',
+};
 
 exports.handler = async (event: CreateAppointmentFunctionEvent) => {
   const { doctorUsername, patientUsername, existingChannelName } = event;
@@ -64,7 +74,7 @@ exports.handler = async (event: CreateAppointmentFunctionEvent) => {
     const doctor: CognitoUser = getCognitoUser(doctorUsername, doctorData);
     const patient: CognitoUser = getCognitoUser(patientUsername, patientData);
     const metadata: ChannelMetadata = {
-      type: 'appointment',
+      type: ChannelType.Appointment,
       appointmentTimestamp: timestamp,
       doctor: {
         username: doctor.username,
@@ -149,6 +159,12 @@ exports.handler = async (event: CreateAppointmentFunctionEvent) => {
         } as ChannelMetadata),
       }),
     );
+
+    return {
+      statusCode: 200,
+      headers,
+      body: JSON.stringify(data),
+    };
   } catch (error: any) {
     console.error(error);
 
