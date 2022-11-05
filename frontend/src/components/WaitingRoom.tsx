@@ -27,7 +27,7 @@ import useMountedRef from '../hooks/useMountedRef';
 import { useCall } from '../providers/CallProvider';
 import { useMessaging } from '../providers/MessagingProvider';
 
-export default function WaitingRoom(): JSX.Element {
+export default function WaitingRoom({ number = 1 }): JSX.Element {
   const {
     createWaitingRoomFunctionArn,
     deleteAppointmentFunctionArn,
@@ -146,8 +146,8 @@ export default function WaitingRoom(): JSX.Element {
     }
 
     createCall({
-      doctorUsername: user.username,
-      patientUsername: channel.patient.username,
+      caller: user.username,
+      recipient: channel.patient.username,
     });
 
     if (channel) onClickDelete(channel);
@@ -295,7 +295,10 @@ export default function WaitingRoom(): JSX.Element {
             </button>
           </>
         )}
-        {accountType === AccountType.Doctor && <CallView />}
+        <CallView
+          number={number}
+          isCaller={accountType === AccountType.Patient}
+        />
         <div className="AppointmentList__listContainer">
           {createList(channels)}
         </div>

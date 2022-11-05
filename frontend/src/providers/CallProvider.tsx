@@ -18,6 +18,7 @@ import React, {
   useState,
 } from 'react';
 import MeetingDoctorView from '../components/MeetingDoctorView2';
+import MeetingPatientView from '../components/MeetingPatientView2';
 import { MeetingInviteStatus, ReservedMessageContent } from '../constants';
 import useMeetingFunctions from '../hooks/useMeetingFunctions';
 import useMountedRef from '../hooks/useMountedRef';
@@ -37,10 +38,10 @@ import {
 } from '../types/lambda';
 
 interface CallValue {
-  CallView: React.FC;
+  CallView: React.FC<{ number: number; isCaller: boolean }>;
   createCall: (createCallInput: {
-    doctorUsername: string;
-    patientUsername: string;
+    caller: string;
+    recipient: string;
   }) => Promise<void>;
   callChannel: Channel | undefined;
   deleteCall: () => Promise<void>;
@@ -302,7 +303,7 @@ export default function CallProvider({ children }: { children: ReactNode }) {
   }, [callChannel, messagingSession, clientId, accountType]);
 
   const createCall = useCallback(
-    async ({ doctorUsername, patientUsername }) => {
+    async ({ caller, recipient }) => {
       const data = await lambdaClient.send(
         new InvokeCommand({
           FunctionName: createAppointmentFunctionArn,
@@ -310,8 +311,8 @@ export default function CallProvider({ children }: { children: ReactNode }) {
           LogType: LogType.None,
           Payload: new TextEncoder().encode(
             JSON.stringify({
-              doctorUsername: doctorUsername,
-              patientUsername: patientUsername,
+              doctorUsername: caller,
+              patientUsername: recipient,
               timestamp: dayjs(Date.now())
                 .second(0)
                 .millisecond(0)
@@ -381,11 +382,33 @@ export default function CallProvider({ children }: { children: ReactNode }) {
     [messagingClient, mountedRef],
   );
 
-  const CallView: React.FC = (props) => {
+  const CallView: React.FC<{ number: number; isCaller: boolean }> = (
+    callViewProps,
+    props,
+  ) => {
     const value = React.useContext(CallContext);
 
     if (callChannel) {
-      return <MeetingDoctorView channel={callChannel} {...value} {...props} />;
+      if (callViewProps.isCaller) {
+        return (
+          <MeetingDoctorView
+            number={callViewProps.number}
+            channel={callChannel}
+            {...value}
+            {...props}
+          />
+        );
+      } else {
+        return (
+          <MeetingPatientView
+            number={callViewProps.number}
+            meetingId={meetingId}
+            channel={callChannel}
+            {...value}
+            {...props}
+          />
+        );
+      }
     }
     return <div />;
   };

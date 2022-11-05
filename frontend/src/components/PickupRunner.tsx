@@ -15,7 +15,7 @@ dayjs.extend(localizedFormat);
 
 // const REFRESH_INTERVAL = 1000;
 
-export default function PickupRunner(): JSX.Element {
+export default function PickupRunner({ number = 1 }): JSX.Element {
   // const { messagingClient } = useAwsClient();
   const { accountType } = useAuth();
   // const { setRoute } = useRoute();
@@ -110,6 +110,7 @@ export default function PickupRunner(): JSX.Element {
         // We must pass the meeting ID as a key because MeetingPatientView does not support the case when
         // only the meeting ID prop changes. Providing a unique key will mount a new copy of MeetingPatientView.
         <MeetingPatientView
+          number={number}
           key={meetingId}
           channel={callChannel}
           meetingId={meetingId}

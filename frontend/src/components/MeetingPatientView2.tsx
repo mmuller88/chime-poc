@@ -18,12 +18,14 @@ import './MeetingPatientView.css';
 import MeetingWidget from './MeetingWidget';
 
 interface Props {
+  number: number;
   channel: Channel;
   meetingId: string;
   onCleanUp: () => void;
 }
 
 export default function MeetingPatientView({
+  number,
   channel,
   meetingId,
   onCleanUp,
@@ -107,6 +109,7 @@ export default function MeetingPatientView({
 
   return (
     <Window
+      number={number}
       className="MeetingPatientView__window"
       isPortal
       title={t('MeetingPatientView.title', {

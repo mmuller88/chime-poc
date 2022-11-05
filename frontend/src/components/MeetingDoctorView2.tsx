@@ -23,10 +23,11 @@ import Window from './Window';
 
 interface Props {
   channel: Channel;
+  number: number;
   // onCleanUp: () => void;
 }
 
-export default function MeetingDoctorView({ channel }: Props) {
+export default function MeetingDoctorView({ number, channel }: Props) {
   const channelArn = channel.summary.ChannelArn;
   const { makeOutboundCallFunctionArn } = useRuntime();
   const { lambdaClient, messagingClient } = useAwsClient();
@@ -248,6 +249,7 @@ export default function MeetingDoctorView({ channel }: Props) {
     <Window
       className="MeetingDoctorView__window"
       isPortal
+      number={number}
       title={t('MeetingDoctorView.title', {
         name: channel.patient.name,
       })}

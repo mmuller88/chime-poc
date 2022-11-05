@@ -26,7 +26,7 @@ import { useMessaging } from '../providers/MessagingProvider';
 // const RETRIES = 1;
 // let timeoutId: ReturnType<typeof setTimeout>;
 
-export default function DirectCall(): JSX.Element {
+export default function DirectCall({ number = 1 }): JSX.Element {
   // const { setRoute } = useRoute();
   const { patientUserPoolGroupName, cognitoUserPoolId } = useRuntime();
   const { cognitoClient, lambdaClient } = useAwsClient();
@@ -38,7 +38,7 @@ export default function DirectCall(): JSX.Element {
   const mountedRef = useMountedRef();
   const { t } = useTranslation();
   const { messagingSession } = useMessaging();
-  const { createCall, callChannel, CallView } = useCall();
+  const { createCall, CallView } = useCall();
 
   useEffect(() => {
     (async () => {
@@ -108,8 +108,8 @@ export default function DirectCall(): JSX.Element {
     }
 
     await createCall({
-      doctorUsername: user.username!,
-      patientUsername: patient.username,
+      caller: user.username!,
+      recipient: patient.username,
     });
 
     setLoading(false);
@@ -134,7 +134,7 @@ export default function DirectCall(): JSX.Element {
     return () => {
       messagingSession?.removeObserver(observer);
     };
-  }, [lambdaClient, patients, selectedPatientUsername, user, callChannel]);
+  }, [lambdaClient, patients, selectedPatientUsername, user]);
 
   // const onCleanUpDoctor = useCallback(async () => {
   //   console.log('onCleanUpDoctor');
@@ -190,12 +190,14 @@ export default function DirectCall(): JSX.Element {
         >
           {t('AppointmentView.call')}
         </button>
-        callChannel {callChannel ? '' : "doesn't"} exist.
       </form>
       {
         <>
           {/* {channel && <Chat channel={channel} />} */}
-          {accountType === AccountType.Doctor && <CallView />}
+          <CallView
+            number={number}
+            isCaller={accountType === AccountType.Doctor}
+          />
           {/*
           {meetingId && channel && (
             // We must pass the meeting ID as a key because MeetingPatientView does not support the case when
