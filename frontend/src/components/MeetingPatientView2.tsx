@@ -12,7 +12,6 @@ import { MeetingInviteStatus, ReservedMessageContent } from '../constants';
 import useMeetingFunctions from '../hooks/useMeetingFunctions';
 import { useAuth } from '../providers/AuthProvider';
 import { useAwsClient } from '../providers/AwsClientProvider';
-import { useCall } from '../providers/CallProvider';
 import { useMessaging } from '../providers/MessagingProvider';
 import { Channel, MeetingAPIResponse, MessageMetadata } from '../types';
 import './MeetingPatientView.css';
@@ -36,7 +35,7 @@ export default function MeetingPatientView({
   const [joinInfo, setJoinInfo] = useState<MeetingAPIResponse>();
   const [showStartingMeeting, setShowStartingMeeting] = useState(false);
   const { t } = useTranslation();
-  const { deleteCall } = useCall();
+  // const { deleteCall } = useCall();
 
   const onClickAccept = useCallback(async () => {
     setShowStartingMeeting(true);
@@ -74,7 +73,7 @@ export default function MeetingPatientView({
   ]);
 
   const onClickDecline = useCallback(async () => {
-    await deleteCall();
+    // await deleteCall();
     // try {
     //   // No "await" needed to unmount right after denying an invite
     //   messagingClient.send(

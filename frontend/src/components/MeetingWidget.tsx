@@ -1,24 +1,25 @@
-import { useEffect, useState } from 'react';
-import { MeetingSessionConfiguration } from 'amazon-chime-sdk-js';
 import {
-  ControlBar,
-  LeaveMeeting,
-  ControlBarButton,
-  VideoInputControl,
   AudioInputControl,
+  ControlBar,
+  ControlBarButton,
+  LeaveMeeting,
   LocalVideo,
-  useMeetingManager,
-  useMeetingStatus,
   MeetingStatus,
   useLocalVideo,
+  useMeetingManager,
+  useMeetingStatus,
+  VideoInputControl,
 } from 'amazon-chime-sdk-component-library-react';
+import { MeetingSessionConfiguration } from 'amazon-chime-sdk-js';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import './MeetingWidget.css';
 import useMountedRef from '../hooks/useMountedRef';
-import VideoPlaceholder from './VideoPlaceholder';
+import { useCall } from '../providers/CallProvider';
+import './MeetingWidget.css';
 import RemoteAttendeeVideo from './RemoteAttendeeVideo';
 import Spinner from './Spinner';
+import VideoPlaceholder from './VideoPlaceholder';
 
 interface Props {
   attendee: any;
@@ -27,13 +28,19 @@ interface Props {
   remoteAttendeeName: string;
 }
 
-export default function MeetingWidget({ meeting, attendee, onCleanUp, remoteAttendeeName }: Props) {
+export default function MeetingWidget({
+  meeting,
+  attendee,
+  onCleanUp,
+  remoteAttendeeName,
+}: Props) {
   const [showJoin, setShowJoin] = useState(true);
   const meetingManager = useMeetingManager();
   const meetingStatus = useMeetingStatus();
   const { isVideoEnabled } = useLocalVideo();
   const mountedRef = useMountedRef();
   const { t } = useTranslation();
+  const { deleteCall } = useCall();
 
   useEffect(() => {
     if (!mountedRef.current) {
@@ -63,6 +70,7 @@ export default function MeetingWidget({ meeting, attendee, onCleanUp, remoteAtte
     await meetingManager.leave();
     setShowJoin(false);
     onCleanUp();
+    await deleteCall();
   };
 
   return (
@@ -77,7 +85,11 @@ export default function MeetingWidget({ meeting, attendee, onCleanUp, remoteAtte
               remoteAttendeeName={remoteAttendeeName}
             />
             <div className="MeetingWidget__localVideoContainer">
-              {isVideoEnabled ? <LocalVideo /> : <VideoPlaceholder title={t('MeetingWidget.me')} />}
+              {isVideoEnabled ? (
+                <LocalVideo />
+              ) : (
+                <VideoPlaceholder title={t('MeetingWidget.me')} />
+              )}
             </div>
           </div>
           <div className="MeetingWidget__controlBar">
@@ -87,9 +99,16 @@ export default function MeetingWidget({ meeting, attendee, onCleanUp, remoteAtte
               showLabels
               responsive={false}
             >
-              <AudioInputControl muteLabel={t('MeetingWidget.mute')} unmuteLabel={t('MeetingWidget.unmute')} />
+              <AudioInputControl
+                muteLabel={t('MeetingWidget.mute')}
+                unmuteLabel={t('MeetingWidget.unmute')}
+              />
               <VideoInputControl label={t('MeetingWidget.video')} />
-              <ControlBarButton icon={<LeaveMeeting />} onClick={onClickLeave} label={t('MeetingWidget.leave')} />
+              <ControlBarButton
+                icon={<LeaveMeeting />}
+                onClick={onClickLeave}
+                label={t('MeetingWidget.leave')}
+              />
             </ControlBar>
           </div>
         </>

@@ -28,10 +28,6 @@ import { useCall } from '../providers/CallProvider';
 import { useMessaging } from '../providers/MessagingProvider';
 import MeetingDoctorView from './MeetingDoctorView2';
 
-// const REFRESH_INTERVAL = 1000;
-// const RETRIES = 1;
-// let timeoutId: ReturnType<typeof setTimeout>;
-
 export default function WaitingRoom(): JSX.Element {
   const {
     createWaitingRoomFunctionArn,
@@ -40,14 +36,11 @@ export default function WaitingRoom(): JSX.Element {
   } = useRuntime();
   const { lambdaClient } = useAwsClient();
   const { user, appInstanceUserArn, accountType } = useAuth();
-  // const [channel, setChannel] = useState<Channel>();
   const [channels, setChannels] = useState<Channel[]>();
   const { messagingSession } = useMessaging();
   const { messagingClient } = useAwsClient();
   const mountedRef = useMountedRef();
   const { createCall, callChannel, deleteCall } = useCall();
-  // const { createCall, callChannel, deleteCall } = useChannelQuery();
-  // const { setRoute } = useRoute();
 
   const listChannels = useCallback(async () => {
     (async () => {
@@ -192,41 +185,6 @@ export default function WaitingRoom(): JSX.Element {
       messagingSession?.removeObserver(observer);
     };
   }, [messagingSession, listChannels]);
-
-  useEffect(() => {
-    let observer: MessagingSessionObserver;
-    if (messagingSession) {
-      observer = {
-        messagingSessionDidReceiveMessage: (message: Message) => {
-          console.log(message);
-          // if (message.type === 'CREATE_CHANNEL_MESSAGE' && !channel) {
-          //   const messageObj = JSON.parse(message.payload) as ChannelMessage;
-          //   if (
-          //     messageObj.Content === 'Sending%20a%20meeting%20invite' &&
-          //     messageObj.Sender?.Arn !== appInstanceUserArn
-          //   ) {
-          //     console.log('MeetingInvite!');
-          //     console.log(message);
-          //     const channelArn = messageObj.ChannelArn;
-          //     const metadata: MessageMetadata = JSON.parse(
-          //       messageObj.Metadata!,
-          //     );
-          //     const meetingId = metadata.meetingId;
-          //     console.log(`channelArn=${channelArn}`);
-          //     console.log(`meetingId=${meetingId}`);
-          //     getChannel(channelArn ?? '');
-          //   }
-          //   //
-          // }
-        },
-      };
-      messagingSession.addObserver(observer);
-      // refreshChannels();
-    }
-    return () => {
-      messagingSession?.removeObserver(observer);
-    };
-  }, [messagingSession]);
 
   const onClickDelete = useCallback(
     (channel: Channel) => {

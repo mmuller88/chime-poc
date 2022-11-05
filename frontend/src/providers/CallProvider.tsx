@@ -117,43 +117,45 @@ export default function CallProvider({ children }: { children: ReactNode }) {
 
   // Meeting invites #################################################################
 
-  // useEffect(() => {
-  //   if (!joinInfo || !callChannel) {
-  //     return;
-  //   }
+  useEffect(() => {
+    if (!joinInfo || !callChannel) {
+      return;
+    }
 
-  //   const observer: MessagingSessionObserver = {
-  //     messagingSessionDidReceiveMessage: (message: Message) => {
-  //       if (message.headers['x-amz-chime-message-type'] === 'CONTROL') {
-  //         return;
-  //       }
-  //       if (message.type === 'CREATE_CHANNEL_MESSAGE') {
-  //         const payload = JSON.parse(message.payload);
-  //         try {
-  //           const metadata = JSON.parse(payload.Metadata) as MessageMetadata;
-  //           const senderUsername = payload.Sender.Arn.split('/user/')[1];
-  //           if (
-  //             senderUsername === callChannel.patient.username &&
-  //             metadata.isMeetingInvitation &&
-  //             metadata.meetingId === joinInfo.Meeting.MeetingId
-  //           ) {
-  //             meetingInviteStatusRef.current = metadata.meetingInviteStatus!;
-  //             setMeetingInviteStatus(meetingInviteStatusRef.current);
-  //           }
-  //         } catch (error: any) {
-  //           console.warn(
-  //             `MeetingDoctorView::messagingSessionDidReceiveMessage::Failed to decode the message content`,
-  //             error,
-  //           );
-  //         }
-  //       }
-  //     },
-  //   };
-  //   messagingSession?.addObserver(observer);
-  //   return () => {
-  //     messagingSession?.removeObserver(observer);
-  //   };
-  // }, [callChannel, joinInfo, messagingSession]);
+    const observer: MessagingSessionObserver = {
+      messagingSessionDidReceiveMessage: (message: Message) => {
+        if (message.headers['x-amz-chime-message-type'] === 'CONTROL') {
+          return;
+        }
+        if (message.type === 'CREATE_CHANNEL_MESSAGE') {
+          const payload = JSON.parse(message.payload);
+          try {
+            const metadata = JSON.parse(payload.Metadata) as MessageMetadata;
+            const senderUsername = payload.Sender.Arn.split('/user/')[1];
+            if (
+              senderUsername === callChannel.patient.username &&
+              metadata.isMeetingInvitation &&
+              metadata.meetingId === joinInfo.Meeting.MeetingId &&
+              metadata.meetingId &&
+              !cleanedUpMeetingIdsRef.current.has(metadata.meetingId)
+            ) {
+              meetingInviteStatusRef.current = metadata.meetingInviteStatus!;
+              setMeetingInviteStatus(meetingInviteStatusRef.current);
+            }
+          } catch (error: any) {
+            console.warn(
+              `MeetingDoctorView::messagingSessionDidReceiveMessage::Failed to decode the message content`,
+              error,
+            );
+          }
+        }
+      },
+    };
+    messagingSession?.addObserver(observer);
+    return () => {
+      messagingSession?.removeObserver(observer);
+    };
+  }, [callChannel, joinInfo, messagingSession]);
 
   useEffect(() => {
     let observer: MessagingSessionObserver;
@@ -161,6 +163,7 @@ export default function CallProvider({ children }: { children: ReactNode }) {
     if (messagingSession) {
       observer = {
         messagingSessionDidReceiveMessage: async (message: Message) => {
+          console.log(message);
           if (message.type === 'CREATE_CHANNEL_MESSAGE') {
             const payload = JSON.parse(message.payload);
             const metadata = JSON.parse(payload.Metadata) as MessageMetadata;
