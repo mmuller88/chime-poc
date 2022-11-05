@@ -21,7 +21,6 @@ import { Message, MessagingSessionObserver } from 'amazon-chime-sdk-js';
 import { AccountType } from '../constants';
 import { useCall } from '../providers/CallProvider';
 import { useMessaging } from '../providers/MessagingProvider';
-import MeetingDoctorView from './MeetingDoctorView2';
 
 // const REFRESH_INTERVAL = 1000;
 // const RETRIES = 1;
@@ -39,7 +38,7 @@ export default function DirectCall(): JSX.Element {
   const mountedRef = useMountedRef();
   const { t } = useTranslation();
   const { messagingSession } = useMessaging();
-  const { createCall, callChannel } = useCall();
+  const { createCall, callChannel, CallView } = useCall();
 
   useEffect(() => {
     (async () => {
@@ -137,11 +136,11 @@ export default function DirectCall(): JSX.Element {
     };
   }, [lambdaClient, patients, selectedPatientUsername, user, callChannel]);
 
-  const onCleanUpDoctor = useCallback(async () => {
-    console.log('onCleanUpDoctor');
+  // const onCleanUpDoctor = useCallback(async () => {
+  //   console.log('onCleanUpDoctor');
 
-    // await deleteCall();
-  }, [callChannel]);
+  //   // await deleteCall();
+  // }, [callChannel]);
 
   // const onCleanUpPatient = useCallback(() => {
   //   if (meetingId) {
@@ -196,12 +195,7 @@ export default function DirectCall(): JSX.Element {
       {
         <>
           {/* {channel && <Chat channel={channel} />} */}
-          {accountType === AccountType.Doctor && callChannel && (
-            <MeetingDoctorView
-              channel={callChannel}
-              onCleanUp={onCleanUpDoctor}
-            />
-          )}
+          {accountType === AccountType.Doctor && <CallView />}
           {/*
           {meetingId && channel && (
             // We must pass the meeting ID as a key because MeetingPatientView does not support the case when

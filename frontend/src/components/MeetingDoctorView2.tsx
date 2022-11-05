@@ -23,16 +23,16 @@ import Window from './Window';
 
 interface Props {
   channel: Channel;
-  onCleanUp: () => void;
+  // onCleanUp: () => void;
 }
 
-export default function MeetingDoctorView({ channel, onCleanUp }: Props) {
+export default function MeetingDoctorView({ channel }: Props) {
   const channelArn = channel.summary.ChannelArn;
   const { makeOutboundCallFunctionArn } = useRuntime();
   const { lambdaClient, messagingClient } = useAwsClient();
   const { appInstanceUserArn } = useAuth();
   const { clientId } = useMessaging();
-  const { meetingInviteStatus, joinInfo } = useCall();
+  const { meetingInviteStatus, joinInfo, deleteCall } = useCall();
   // const mountedRef = useMountedRef();
   // const { createMeeting } = useMeetingFunctions();
   // const [joinInfo, setJoinInfo] = useState<MeetingAPIResponse>();
@@ -89,11 +89,11 @@ export default function MeetingDoctorView({ channel, onCleanUp }: Props) {
   //   channel.patient.username,
   // ]);
 
-  useEffect(() => {
-    if (meetingInviteStatus === MeetingInviteStatus.Declined) {
-      onCleanUp();
-    }
-  }, [meetingInviteStatus, onCleanUp]);
+  // useEffect(() => {
+  //   if (meetingInviteStatus === MeetingInviteStatus.Declined) {
+  //     // onCleanUp();
+  //   }
+  // }, [meetingInviteStatus, onCleanUp]);
 
   useEffect(() => {
     return () => {
@@ -133,7 +133,7 @@ export default function MeetingDoctorView({ channel, onCleanUp }: Props) {
     clientId,
     joinInfo,
     messagingClient,
-    onCleanUp,
+    // onCleanUp,
   ]);
 
   // useEffect(() => {
@@ -240,9 +240,9 @@ export default function MeetingDoctorView({ channel, onCleanUp }: Props) {
   ]);
 
   const onClickCancel = useCallback(async () => {
-    // await deleteCall();
-    onCleanUp();
-  }, [onCleanUp]);
+    await deleteCall();
+    // onCleanUp();
+  }, []);
 
   return (
     <Window
@@ -299,7 +299,7 @@ export default function MeetingDoctorView({ channel, onCleanUp }: Props) {
             <MeetingWidget
               attendee={joinInfo.Attendee}
               meeting={joinInfo.Meeting}
-              onCleanUp={onCleanUp}
+              onCleanUp={() => {}}
               remoteAttendeeName={channel.patient.name}
             />
           </MeetingProvider>

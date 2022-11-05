@@ -26,7 +26,6 @@ import { AccountType } from '../constants';
 import useMountedRef from '../hooks/useMountedRef';
 import { useCall } from '../providers/CallProvider';
 import { useMessaging } from '../providers/MessagingProvider';
-import MeetingDoctorView from './MeetingDoctorView2';
 
 export default function WaitingRoom(): JSX.Element {
   const {
@@ -40,7 +39,7 @@ export default function WaitingRoom(): JSX.Element {
   const { messagingSession } = useMessaging();
   const { messagingClient } = useAwsClient();
   const mountedRef = useMountedRef();
-  const { createCall, callChannel, deleteCall } = useCall();
+  const { createCall, CallView } = useCall();
 
   const listChannels = useCallback(async () => {
     (async () => {
@@ -252,10 +251,10 @@ export default function WaitingRoom(): JSX.Element {
     );
   };
 
-  const onCleanUpDoctor = useCallback(async () => {
-    console.log('onCleanUpDoctor');
-    await deleteCall();
-  }, [callChannel]);
+  // const onCleanUpDoctor = useCallback(async () => {
+  //   console.log('onCleanUpDoctor');
+  //   await deleteCall();
+  // }, [callChannel]);
 
   return (
     <div className="DirectCall">
@@ -296,12 +295,7 @@ export default function WaitingRoom(): JSX.Element {
             </button>
           </>
         )}
-        {accountType === AccountType.Doctor && callChannel && (
-          <MeetingDoctorView
-            channel={callChannel}
-            onCleanUp={onCleanUpDoctor}
-          />
-        )}
+        {accountType === AccountType.Doctor && <CallView />}
         <div className="AppointmentList__listContainer">
           {createList(channels)}
         </div>

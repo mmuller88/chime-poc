@@ -17,6 +17,7 @@ import React, {
   useRef,
   useState,
 } from 'react';
+import MeetingDoctorView from '../components/MeetingDoctorView2';
 import { MeetingInviteStatus, ReservedMessageContent } from '../constants';
 import useMeetingFunctions from '../hooks/useMeetingFunctions';
 import useMountedRef from '../hooks/useMountedRef';
@@ -36,6 +37,7 @@ import {
 } from '../types/lambda';
 
 interface CallValue {
+  CallView: React.FC;
   createCall: (createCallInput: {
     doctorUsername: string;
     patientUsername: string;
@@ -379,7 +381,17 @@ export default function CallProvider({ children }: { children: ReactNode }) {
     [messagingClient, mountedRef],
   );
 
+  const CallView: React.FC = (props) => {
+    const value = React.useContext(CallContext);
+
+    if (callChannel) {
+      return <MeetingDoctorView channel={callChannel} {...value} {...props} />;
+    }
+    return <div />;
+  };
+
   const value: CallValue = {
+    CallView,
     createCall,
     callChannel,
     deleteCall,

@@ -8,7 +8,6 @@ import { useAuth } from '../providers/AuthProvider';
 import { useCall } from '../providers/CallProvider';
 // import { useRoute } from '../providers/RouteProvider';
 import './AppointmentList.css';
-import MeetingDoctorView from './MeetingDoctorView2';
 import MeetingPatientView from './MeetingPatientView2';
 
 dayjs.extend(calendar);
@@ -104,9 +103,9 @@ export default function PickupRunner(): JSX.Element {
 
   return (
     <div className="AppointmentList">
-      {accountType === AccountType.Doctor && callChannel && (
-        <MeetingDoctorView channel={callChannel} onCleanUp={onCleanUpPatient} />
-      )}
+      {/* {accountType === AccountType.Doctor && callChannel && (
+        <MeetingDoctorView channel={callChannel} />
+      )} */}
       {accountType === AccountType.Patient && meetingId && callChannel && (
         // We must pass the meeting ID as a key because MeetingPatientView does not support the case when
         // only the meeting ID prop changes. Providing a unique key will mount a new copy of MeetingPatientView.
