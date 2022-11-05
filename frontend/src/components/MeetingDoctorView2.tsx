@@ -5,18 +5,16 @@ import {
 } from '@aws-sdk/client-chime-sdk-messaging';
 import { InvocationType, InvokeCommand, LogType } from '@aws-sdk/client-lambda';
 import { MeetingProvider } from 'amazon-chime-sdk-component-library-react';
-import { Message, MessagingSessionObserver } from 'amazon-chime-sdk-js';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
 
 import { MeetingInviteStatus, ReservedMessageContent } from '../constants';
-import useMeetingFunctions from '../hooks/useMeetingFunctions';
-import useMountedRef from '../hooks/useMountedRef';
 import { useAuth } from '../providers/AuthProvider';
 import { useAwsClient } from '../providers/AwsClientProvider';
+import { useCall } from '../providers/CallProvider';
 import { useMessaging } from '../providers/MessagingProvider';
 import { useRuntime } from '../providers/RuntimeProvider';
-import { Channel, MeetingAPIResponse, MessageMetadata } from '../types';
+import { Channel, MessageMetadata } from '../types';
 import { MakeOutboundCallFunctionEvent } from '../types/lambda';
 import './MeetingDoctorView.css';
 import MeetingWidget from './MeetingWidget';
@@ -32,63 +30,64 @@ export default function MeetingDoctorView({ channel, onCleanUp }: Props) {
   const channelArn = channel.summary.ChannelArn;
   const { makeOutboundCallFunctionArn } = useRuntime();
   const { lambdaClient, messagingClient } = useAwsClient();
-  const { appInstanceUserArn, user } = useAuth();
-  const { messagingSession, clientId } = useMessaging();
-  const mountedRef = useMountedRef();
-  const { createMeeting } = useMeetingFunctions();
-  const [joinInfo, setJoinInfo] = useState<MeetingAPIResponse>();
-  const [meetingInviteStatus, setMeetingInviteStatus] = useState(
-    MeetingInviteStatus.Unknown,
-  );
+  const { appInstanceUserArn } = useAuth();
+  const { clientId } = useMessaging();
+  const { meetingInviteStatus, joinInfo, deleteCall } = useCall();
+  // const mountedRef = useMountedRef();
+  // const { createMeeting } = useMeetingFunctions();
+  // const [joinInfo, setJoinInfo] = useState<MeetingAPIResponse>();
+  // const [meetingInviteStatus, setMeetingInviteStatus] = useState(
+  //   MeetingInviteStatus.Unknown,
+  // );
   const meetingInviteStatusRef =
     useRef<MeetingInviteStatus>(meetingInviteStatus);
-  const timeoudRef = useRef<ReturnType<typeof setTimeout>>();
+  // const timeoudRef = useRef<ReturnType<typeof setTimeout>>();
   const { t } = useTranslation();
   const [called, setCalled] = useState<boolean>(false);
 
-  useEffect(() => {
-    if (!joinInfo) {
-      return;
-    }
+  // useEffect(() => {
+  //   if (!joinInfo) {
+  //     return;
+  //   }
 
-    const observer: MessagingSessionObserver = {
-      messagingSessionDidReceiveMessage: (message: Message) => {
-        if (message.headers['x-amz-chime-message-type'] === 'CONTROL') {
-          return;
-        }
-        if (message.type === 'CREATE_CHANNEL_MESSAGE') {
-          const payload = JSON.parse(message.payload);
-          try {
-            const metadata = JSON.parse(payload.Metadata) as MessageMetadata;
-            const senderUsername = payload.Sender.Arn.split('/user/')[1];
-            if (
-              senderUsername === channel.patient.username &&
-              metadata.isMeetingInvitation &&
-              metadata.meetingId === joinInfo.Meeting.MeetingId
-            ) {
-              meetingInviteStatusRef.current = metadata.meetingInviteStatus!;
-              setMeetingInviteStatus(meetingInviteStatusRef.current);
-            }
-          } catch (error: any) {
-            console.warn(
-              `MeetingDoctorView::messagingSessionDidReceiveMessage::Failed to decode the message content`,
-              error,
-            );
-          }
-        }
-      },
-    };
-    messagingSession?.addObserver(observer);
-    return () => {
-      messagingSession?.removeObserver(observer);
-    };
-  }, [
-    channelArn,
-    joinInfo,
-    messagingSession,
-    user.username,
-    channel.patient.username,
-  ]);
+  //   const observer: MessagingSessionObserver = {
+  //     messagingSessionDidReceiveMessage: (message: Message) => {
+  //       if (message.headers['x-amz-chime-message-type'] === 'CONTROL') {
+  //         return;
+  //       }
+  //       if (message.type === 'CREATE_CHANNEL_MESSAGE') {
+  //         const payload = JSON.parse(message.payload);
+  //         try {
+  //           const metadata = JSON.parse(payload.Metadata) as MessageMetadata;
+  //           const senderUsername = payload.Sender.Arn.split('/user/')[1];
+  //           if (
+  //             senderUsername === channel.patient.username &&
+  //             metadata.isMeetingInvitation &&
+  //             metadata.meetingId === joinInfo.Meeting.MeetingId
+  //           ) {
+  //             meetingInviteStatusRef.current = metadata.meetingInviteStatus!;
+  //             setMeetingInviteStatus(meetingInviteStatusRef.current);
+  //           }
+  //         } catch (error: any) {
+  //           console.warn(
+  //             `MeetingDoctorView::messagingSessionDidReceiveMessage::Failed to decode the message content`,
+  //             error,
+  //           );
+  //         }
+  //       }
+  //     },
+  //   };
+  //   messagingSession?.addObserver(observer);
+  //   return () => {
+  //     messagingSession?.removeObserver(observer);
+  //   };
+  // }, [
+  //   channelArn,
+  //   joinInfo,
+  //   messagingSession,
+  //   user.username,
+  //   channel.patient.username,
+  // ]);
 
   useEffect(() => {
     if (meetingInviteStatus === MeetingInviteStatus.Declined) {
@@ -137,74 +136,74 @@ export default function MeetingDoctorView({ channel, onCleanUp }: Props) {
     onCleanUp,
   ]);
 
-  useEffect(() => {
-    if (
-      !mountedRef.current ||
-      meetingInviteStatus === MeetingInviteStatus.Accepted ||
-      meetingInviteStatus === MeetingInviteStatus.Declined
-    ) {
-      if (timeoudRef.current) {
-        clearTimeout(timeoudRef.current);
-      }
-      return;
-    }
+  // useEffect(() => {
+  //   if (
+  //     !mountedRef.current ||
+  //     meetingInviteStatus === MeetingInviteStatus.Accepted ||
+  //     meetingInviteStatus === MeetingInviteStatus.Declined
+  //   ) {
+  //     if (timeoudRef.current) {
+  //       clearTimeout(timeoudRef.current);
+  //     }
+  //     return;
+  //   }
 
-    (async () => {
-      const response = await createMeeting(channel);
-      if (!mountedRef.current) {
-        return;
-      }
+  //   (async () => {
+  //     const response = await createMeeting(channel);
+  //     if (!mountedRef.current) {
+  //       return;
+  //     }
 
-      setJoinInfo(response);
+  //     setJoinInfo(response);
 
-      (async function sendRequest() {
-        try {
-          await messagingClient.send(
-            new SendChannelMessageCommand({
-              ChannelArn: channelArn,
-              Content: encodeURIComponent(ReservedMessageContent.SendingInvite),
-              ChimeBearer: appInstanceUserArn,
-              Type: ChannelMessageType.STANDARD,
-              Persistence: ChannelMessagePersistenceType.NON_PERSISTENT,
-              Metadata: JSON.stringify({
-                clientId,
-                isMeetingInvitation: true,
-                isPresence: true,
-                meetingId: response.Meeting.MeetingId,
-                meetingInviteStatus: MeetingInviteStatus.Unknown,
-              } as MessageMetadata),
-            }),
-          );
-        } catch (error: any) {
-          console.error(error);
-        }
+  //     (async function sendRequest() {
+  //       try {
+  //         await messagingClient.send(
+  //           new SendChannelMessageCommand({
+  //             ChannelArn: channelArn,
+  //             Content: encodeURIComponent(ReservedMessageContent.SendingInvite),
+  //             ChimeBearer: appInstanceUserArn,
+  //             Type: ChannelMessageType.STANDARD,
+  //             Persistence: ChannelMessagePersistenceType.NON_PERSISTENT,
+  //             Metadata: JSON.stringify({
+  //               clientId,
+  //               isMeetingInvitation: true,
+  //               isPresence: true,
+  //               meetingId: response.Meeting.MeetingId,
+  //               meetingInviteStatus: MeetingInviteStatus.Unknown,
+  //             } as MessageMetadata),
+  //           }),
+  //         );
+  //       } catch (error: any) {
+  //         console.error(error);
+  //       }
 
-        if (
-          mountedRef.current &&
-          meetingInviteStatusRef.current === MeetingInviteStatus.Unknown
-        ) {
-          timeoudRef.current = setTimeout(sendRequest, 1000);
-        }
-      })();
-    })();
+  //       if (
+  //         mountedRef.current &&
+  //         meetingInviteStatusRef.current === MeetingInviteStatus.Unknown
+  //       ) {
+  //         timeoudRef.current = setTimeout(sendRequest, 1000);
+  //       }
+  //     })();
+  //   })();
 
-    return () => {
-      if (timeoudRef.current) {
-        clearTimeout(timeoudRef.current);
-      }
-    };
-  }, [
-    appInstanceUserArn,
-    channel,
-    channelArn,
-    clientId,
-    createMeeting,
-    meetingInviteStatus,
-    messagingClient,
-    messagingSession,
-    mountedRef,
-    user.username,
-  ]);
+  //   return () => {
+  //     if (timeoudRef.current) {
+  //       clearTimeout(timeoudRef.current);
+  //     }
+  //   };
+  // }, [
+  //   appInstanceUserArn,
+  //   channel,
+  //   channelArn,
+  //   clientId,
+  //   createMeeting,
+  //   meetingInviteStatus,
+  //   messagingClient,
+  //   messagingSession,
+  //   mountedRef,
+  //   user.username,
+  // ]);
 
   const onClickPhoneCall = useCallback(async () => {
     if (joinInfo) {
@@ -240,7 +239,8 @@ export default function MeetingDoctorView({ channel, onCleanUp }: Props) {
     setCalled,
   ]);
 
-  const onClickCancel = useCallback(() => {
+  const onClickCancel = useCallback(async () => {
+    await deleteCall();
     onCleanUp();
   }, [onCleanUp]);
 

@@ -26,7 +26,7 @@ import { AccountType } from '../constants';
 import useMountedRef from '../hooks/useMountedRef';
 import { useCall } from '../providers/CallProvider';
 import { useMessaging } from '../providers/MessagingProvider';
-import MeetingDoctorView from './MeetingDoctorView';
+import MeetingDoctorView from './MeetingDoctorView2';
 
 // const REFRESH_INTERVAL = 1000;
 // const RETRIES = 1;

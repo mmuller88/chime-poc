@@ -21,7 +21,7 @@ import { Message, MessagingSessionObserver } from 'amazon-chime-sdk-js';
 import { AccountType } from '../constants';
 import { useCall } from '../providers/CallProvider';
 import { useMessaging } from '../providers/MessagingProvider';
-import MeetingDoctorView from './MeetingDoctorView';
+import MeetingDoctorView from './MeetingDoctorView2';
 
 // const REFRESH_INTERVAL = 1000;
 // const RETRIES = 1;

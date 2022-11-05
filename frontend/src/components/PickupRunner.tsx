@@ -8,8 +8,8 @@ import { useAuth } from '../providers/AuthProvider';
 import { useCall } from '../providers/CallProvider';
 // import { useRoute } from '../providers/RouteProvider';
 import './AppointmentList.css';
-import MeetingDoctorView from './MeetingDoctorView';
-import MeetingPatientView from './MeetingPatientView';
+import MeetingDoctorView from './MeetingDoctorView2';
+import MeetingPatientView from './MeetingPatientView2';
 
 dayjs.extend(calendar);
 dayjs.extend(localizedFormat);
