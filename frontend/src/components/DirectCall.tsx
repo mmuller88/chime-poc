@@ -8,27 +8,18 @@ import 'react-datepicker/dist/react-datepicker.css';
 import { useAuth } from '../providers/AuthProvider';
 import { useAwsClient } from '../providers/AwsClientProvider';
 // import { useRoute } from '../providers/RouteProvider';
-import { Channel, ChannelMetadata, CognitoUser } from '../types';
+import { CognitoUser } from '../types';
 // import Chat from './Chat';
 import './DirectCall.css';
 
 // import Config from '../utils/Config';
-import { InvocationType, InvokeCommand, LogType } from '@aws-sdk/client-lambda';
-import dayjs from 'dayjs';
 import { useTranslation } from 'react-i18next';
 import useMountedRef from '../hooks/useMountedRef';
 import { useRuntime } from '../providers/RuntimeProvider';
-import {
-  CreateAppointmentFunctionEvent,
-  DeleteAppointmentFunctionEvent,
-} from '../types/lambda';
 
-import {
-  ChannelModeratedByAppInstanceUserSummary,
-  ListChannelsModeratedByAppInstanceUserCommand,
-} from '@aws-sdk/client-chime-sdk-messaging';
 import { Message, MessagingSessionObserver } from 'amazon-chime-sdk-js';
-import { v4 as uuidv4 } from 'uuid';
+import { AccountType } from '../constants';
+import { useCall } from '../providers/CallProvider';
 import { useMessaging } from '../providers/MessagingProvider';
 import MeetingDoctorView from './MeetingDoctorView';
 
@@ -38,81 +29,17 @@ import MeetingDoctorView from './MeetingDoctorView';
 
 export default function DirectCall(): JSX.Element {
   // const { setRoute } = useRoute();
-  const {
-    patientUserPoolGroupName,
-    cognitoUserPoolId,
-    createAppointmentFunctionArn,
-    deleteAppointmentFunctionArn,
-  } = useRuntime();
-  const { cognitoClient, lambdaClient, messagingClient } = useAwsClient();
-  const { user, appInstanceUserArn } = useAuth();
-  // const [startDate, setStartDate] = useState(new Date());
+  const { patientUserPoolGroupName, cognitoUserPoolId } = useRuntime();
+  const { cognitoClient, lambdaClient } = useAwsClient();
+  const { user, accountType } = useAuth();
   const [patients, setPatients] = useState<CognitoUser[]>([]);
-  // const [meetingId, setMeetingId] = useState<string>();
   const [selectedPatientUsername, setSelectedPatientUsername] =
     useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
-  // const [channelName, setChannelName] = useState<string | undefined>(undefined);
   const mountedRef = useMountedRef();
-  // const cleanedUpMeetingIdsRef = useRef<Set<string>>(new Set());
   const { t } = useTranslation();
-  const [showMeetingDoctorView, setShowMeetingDoctorView] = useState(false);
-  // const [channels, setChannels] = useState<Channel[]>();
-  const [channel, setChannel] = useState<Channel>();
   const { messagingSession } = useMessaging();
-
-  const listChannels = useCallback(
-    async (channelName: string) => {
-      (async () => {
-        // console.log('listChannels');
-        try {
-          let channels: ChannelModeratedByAppInstanceUserSummary[] = [];
-          let nextToken: string | undefined;
-          do {
-            const data = await messagingClient.send(
-              new ListChannelsModeratedByAppInstanceUserCommand({
-                ChimeBearer: appInstanceUserArn,
-                NextToken: nextToken,
-              }),
-            );
-            console.log(`Channels=${JSON.stringify(data.Channels)}`);
-            console.log(`channelName=${channelName}`);
-            channels.push(
-              ...(data.Channels?.filter(
-                (channel) => channel.ChannelSummary?.Name === channelName,
-              ) || []),
-            );
-            nextToken = data.NextToken;
-          } while (nextToken);
-          if (!mountedRef.current) {
-            return;
-          }
-
-          // console.log(channels);
-          const newChannel = channels.map<Channel>(
-            (channel: ChannelModeratedByAppInstanceUserSummary) => {
-              const metadata: ChannelMetadata = JSON.parse(
-                channel.ChannelSummary?.Metadata!,
-              );
-              return {
-                appointmentTimestamp: new Date(metadata.appointmentTimestamp),
-                doctor: metadata.doctor,
-                patient: metadata.patient,
-                presenceMap: metadata.presenceMap,
-                summary: channel.ChannelSummary,
-                sfnExecutionArn: metadata.sfnExecutionArn,
-              } as Channel;
-            },
-          )?.[0];
-          if (newChannel) setChannel(newChannel);
-          // if (channel) setShowMeetingDoctorView(true);
-        } catch (error) {
-          console.error(error);
-        }
-      })();
-    },
-    [appInstanceUserArn, messagingClient, mountedRef],
-  );
+  const { createCall, callChannel } = useCall();
 
   useEffect(() => {
     (async () => {
@@ -181,42 +108,12 @@ export default function DirectCall(): JSX.Element {
       throw new Error(`Patient ${selectedPatientUsername} does not exist.`);
     }
 
-    const channelName = uuidv4();
+    await createCall({
+      doctorUsername: user.username!,
+      patientUsername: patient.username,
+    });
 
-    await lambdaClient.send(
-      new InvokeCommand({
-        FunctionName: createAppointmentFunctionArn,
-        InvocationType: InvocationType.RequestResponse,
-        LogType: LogType.None,
-        Payload: new TextEncoder().encode(
-          JSON.stringify({
-            doctorUsername: user.username,
-            patientUsername: patient.username,
-            timestamp: dayjs(Date.now()).second(0).millisecond(0).toISOString(),
-            existingChannelName: channelName,
-          } as CreateAppointmentFunctionEvent),
-        ),
-      }),
-    );
-
-    setShowMeetingDoctorView(true);
-
-    // When the backend creates multiple requests of UpdateChannel API simultaneously,
-    // the messaging session (WebSocket) sometimes does not receive all UPDATE_CHANNEL messages.
-    // Keep refreshing the list 15 seconds later from the previous listChannels() call.
-
-    // let currentRetry: number;
-
-    const refreshChannels = () => {
-      // if (channel || currentRetry === 0) {
-      //   setLoading(false);
-      //   return;
-      // }
-      // clearTimeout(timeoutId);
-      listChannels(channelName);
-      // timeoutId = setTimeout(refreshChannels, REFRESH_INTERVAL);
-      // currentRetry--;
-    };
+    setLoading(false);
 
     let observer: MessagingSessionObserver;
     if (messagingSession) {
@@ -227,57 +124,24 @@ export default function DirectCall(): JSX.Element {
             message.type === 'DELETE_CHANNEL' ||
             message.type === 'UPDATE_CHANNEL'
           ) {
-            refreshChannels();
+            // refreshChannels();
           }
         },
       };
       messagingSession.addObserver(observer);
       // currentRetry = RETRIES;
-      refreshChannels();
+      // refreshChannels();
     }
     return () => {
       messagingSession?.removeObserver(observer);
     };
-  }, [
-    lambdaClient,
-    patients,
-    selectedPatientUsername,
-    // setRoute,
-    channel,
-    // startDate,
-    user,
-  ]);
+  }, [lambdaClient, patients, selectedPatientUsername, user, callChannel]);
 
-  const onCleanUpDoctor = useCallback(() => {
+  const onCleanUpDoctor = useCallback(async () => {
     console.log('onCleanUpDoctor');
-    setShowMeetingDoctorView(false);
 
-    (async () => {
-      try {
-        console.log(channel);
-        await lambdaClient.send(
-          new InvokeCommand({
-            FunctionName: deleteAppointmentFunctionArn,
-            InvocationType: InvocationType.RequestResponse,
-            LogType: LogType.None,
-            Payload: new TextEncoder().encode(
-              JSON.stringify({
-                appInstanceUserArn,
-                channelArn: channel?.summary.ChannelArn,
-              } as DeleteAppointmentFunctionEvent),
-            ),
-          }),
-        );
-
-        setChannel(undefined);
-      } catch (error: any) {
-        console.error(error);
-      } finally {
-        // setRoute('AppointmentList');
-        // loadingRef.current = false;
-      }
-    })();
-  }, [channel]);
+    // await deleteCall();
+  }, [callChannel]);
 
   // const onCleanUpPatient = useCallback(() => {
   //   if (meetingId) {
@@ -327,13 +191,16 @@ export default function DirectCall(): JSX.Element {
         >
           {t('AppointmentView.call')}
         </button>
-        Channel {channel ? '' : "doesn't"} exist.
+        callChannel {callChannel ? '' : "doesn't"} exist.
       </form>
       {
         <>
           {/* {channel && <Chat channel={channel} />} */}
-          {showMeetingDoctorView && channel && (
-            <MeetingDoctorView channel={channel} onCleanUp={onCleanUpDoctor} />
+          {accountType === AccountType.Doctor && callChannel && (
+            <MeetingDoctorView
+              channel={callChannel}
+              onCleanUp={onCleanUpDoctor}
+            />
           )}
           {/*
           {meetingId && channel && (

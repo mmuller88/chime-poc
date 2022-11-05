@@ -32,7 +32,7 @@ export default function MeetingDoctorView({ channel, onCleanUp }: Props) {
   const { lambdaClient, messagingClient } = useAwsClient();
   const { appInstanceUserArn } = useAuth();
   const { clientId } = useMessaging();
-  const { meetingInviteStatus, joinInfo } = useCall();
+  const { meetingInviteStatus, joinInfo, deleteCall } = useCall();
   // const mountedRef = useMountedRef();
   // const { createMeeting } = useMeetingFunctions();
   // const [joinInfo, setJoinInfo] = useState<MeetingAPIResponse>();
@@ -239,7 +239,8 @@ export default function MeetingDoctorView({ channel, onCleanUp }: Props) {
     setCalled,
   ]);
 
-  const onClickCancel = useCallback(() => {
+  const onClickCancel = useCallback(async () => {
+    await deleteCall();
     onCleanUp();
   }, [onCleanUp]);
 

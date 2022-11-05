@@ -45,7 +45,7 @@ export default function WaitingRoom(): JSX.Element {
   const { messagingSession } = useMessaging();
   const { messagingClient } = useAwsClient();
   const mountedRef = useMountedRef();
-  const { createCall, callChannel, deleteCall } = useCall();
+  const { createCall, callChannel } = useCall();
   // const { createCall, callChannel, deleteCall } = useChannelQuery();
   // const { setRoute } = useRoute();
 
@@ -290,7 +290,7 @@ export default function WaitingRoom(): JSX.Element {
 
   const onCleanUpDoctor = useCallback(async () => {
     console.log('onCleanUpDoctor');
-    await deleteCall();
+    // await deleteCall();
   }, [callChannel]);
 
   return (
@@ -321,7 +321,7 @@ export default function WaitingRoom(): JSX.Element {
             Join
           </button>
         )}
-        {callChannel && (
+        {accountType === AccountType.Doctor && callChannel && (
           <MeetingDoctorView
             channel={callChannel}
             onCleanUp={onCleanUpDoctor}
