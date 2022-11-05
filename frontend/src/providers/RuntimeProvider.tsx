@@ -12,6 +12,7 @@ interface RuntimeValue {
   makeOutboundCallFunctionArn: string;
   patientUserPoolGroupName: string;
   createAppointmentFunctionArn: string;
+  // file://Users/martin/git/chime-poc/backend/lambda/src/create-waiting-room.ts
   createWaitingRoomFunctionArn: string;
 }
 

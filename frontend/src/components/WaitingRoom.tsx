@@ -45,7 +45,7 @@ export default function WaitingRoom(): JSX.Element {
   const { messagingSession } = useMessaging();
   const { messagingClient } = useAwsClient();
   const mountedRef = useMountedRef();
-  const { createCall, callChannel } = useCall();
+  const { createCall, callChannel, deleteCall } = useCall();
   // const { createCall, callChannel, deleteCall } = useChannelQuery();
   // const { setRoute } = useRoute();
 
@@ -159,6 +159,12 @@ export default function WaitingRoom(): JSX.Element {
     });
 
     if (channel) onClickDelete(channel);
+  }, [lambdaClient, user, channels]);
+
+  const onClickRefresh = useCallback(async () => {
+    console.log('onClickRefresh');
+
+    await listChannels();
   }, [lambdaClient, user, channels]);
 
   useEffect(() => {
@@ -290,7 +296,7 @@ export default function WaitingRoom(): JSX.Element {
 
   const onCleanUpDoctor = useCallback(async () => {
     console.log('onCleanUpDoctor');
-    // await deleteCall();
+    await deleteCall();
   }, [callChannel]);
 
   return (
@@ -317,9 +323,20 @@ export default function WaitingRoom(): JSX.Element {
           </>
         )}
         {accountType === AccountType.Doctor && (
-          <button className="AppointmentView__callButton" onClick={onClickJoin}>
-            Join
-          </button>
+          <>
+            <button
+              className="AppointmentView__callButton"
+              onClick={onClickJoin}
+            >
+              Join
+            </button>
+            <button
+              className="AppointmentView__callButton"
+              onClick={onClickRefresh}
+            >
+              Refresh
+            </button>
+          </>
         )}
         {accountType === AccountType.Doctor && callChannel && (
           <MeetingDoctorView

@@ -13,7 +13,11 @@ import {
 import { v4 as uuidv4 } from 'uuid';
 
 import { Presence } from '../../../frontend/src/constants';
-import { ChannelMetadata, CognitoUser } from '../../../frontend/src/types';
+import {
+  ChannelMetadata,
+  ChannelType,
+  CognitoUser,
+} from '../../../frontend/src/types';
 import { CreateWaitingRoomFunctionEvent } from '../../../frontend/src/types/lambda';
 import { getCognitoUser } from './utils';
 
@@ -41,7 +45,7 @@ exports.handler = async (event: CreateWaitingRoomFunctionEvent) => {
 
     const patient: CognitoUser = getCognitoUser(patientUsername, patientData);
     const metadata: ChannelMetadata = {
-      type: 'waitingroom',
+      type: ChannelType.WaitingRoom,
       appointmentTimestamp: timestamp,
       patient: {
         username: patient.username,
