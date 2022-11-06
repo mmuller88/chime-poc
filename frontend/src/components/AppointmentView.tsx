@@ -93,7 +93,7 @@ export default function AppointmentView(): JSX.Element {
               if (
                 accountType === AccountType.Patient &&
                 metadata.isMeetingInvitation &&
-                senderUsername === channel.doctor.username &&
+                senderUsername === channel.caller.username &&
                 metadata.meetingId &&
                 !cleanedUpMeetingIdsRef.current.has(metadata.meetingId)
               ) {
@@ -134,8 +134,8 @@ export default function AppointmentView(): JSX.Element {
     clientId,
     accountType,
     user.username,
-    channel.patient.username,
-    channel.doctor?.username,
+    channel.recipient.username,
+    channel.caller?.username,
   ]);
 
   useEffect(() => {
@@ -183,11 +183,11 @@ export default function AppointmentView(): JSX.Element {
 
   const trackRemotePresence = () => {
     if (accountType === AccountType.Doctor) {
-      if (!presenceMap.current[channel.patient.username]) {
+      if (!presenceMap.current[channel.recipient.username]) {
         return;
       }
       if (
-        Date.now() - presenceMap.current[channel.patient.username] >
+        Date.now() - presenceMap.current[channel.recipient.username] >
         PRESENCE_CHECK_THRESHOLD
       ) {
         if (isRemoteAttendeePresent) {
@@ -208,11 +208,11 @@ export default function AppointmentView(): JSX.Element {
       }
     }
     if (accountType === AccountType.Patient) {
-      if (channel.doctor && !presenceMap.current[channel.doctor.username]) {
+      if (channel.caller && !presenceMap.current[channel.caller.username]) {
         return;
       }
       if (
-        Date.now() - presenceMap.current[channel.doctor.username] >
+        Date.now() - presenceMap.current[channel.caller.username] >
         PRESENCE_CHECK_THRESHOLD
       ) {
         if (isRemoteAttendeePresent) {
@@ -303,8 +303,8 @@ export default function AppointmentView(): JSX.Element {
               <>
                 <span className="AppointmentView__title">
                   {accountType === AccountType.Doctor
-                    ? channel.patient.name
-                    : channel.doctor?.name ?? 'Unknown'}
+                    ? channel.recipient.name
+                    : channel.caller?.name ?? 'Unknown'}
                 </span>
                 <span className="AppointmentView__icon">
                   <svg

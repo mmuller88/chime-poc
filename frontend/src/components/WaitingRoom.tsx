@@ -27,7 +27,7 @@ import useMountedRef from '../hooks/useMountedRef';
 import { useCall } from '../providers/CallProvider';
 import { useMessaging } from '../providers/MessagingProvider';
 
-export default function WaitingRoom({ number = 1 }): JSX.Element {
+export default function WaitingRoom(): JSX.Element {
   const {
     createWaitingRoomFunctionArn,
     deleteAppointmentFunctionArn,
@@ -39,7 +39,7 @@ export default function WaitingRoom({ number = 1 }): JSX.Element {
   const { messagingSession } = useMessaging();
   const { messagingClient } = useAwsClient();
   const mountedRef = useMountedRef();
-  const { createCall, CallView } = useCall();
+  const { createCall } = useCall();
 
   const listChannels = useCallback(async () => {
     (async () => {
@@ -71,8 +71,8 @@ export default function WaitingRoom({ number = 1 }): JSX.Element {
               const metadata: ChannelMetadata = JSON.parse(channel.Metadata!);
               return {
                 appointmentTimestamp: new Date(metadata.appointmentTimestamp),
-                doctor: metadata.doctor,
-                patient: metadata.patient,
+                caller: metadata.doctor,
+                recipient: metadata.patient,
                 presenceMap: metadata.presenceMap,
                 summary: channel,
                 sfnExecutionArn: metadata.sfnExecutionArn,
@@ -147,7 +147,7 @@ export default function WaitingRoom({ number = 1 }): JSX.Element {
 
     createCall({
       caller: user.username,
-      recipient: channel.patient.username,
+      recipient: channel.recipient.username,
     });
 
     if (channel) onClickDelete(channel);
@@ -199,7 +199,7 @@ export default function WaitingRoom({ number = 1 }): JSX.Element {
                   appInstanceUserArn:
                     accountType === AccountType.Patient
                       ? appInstanceUserArn
-                      : `${appInstanceArn}/user/${channel?.patient.username}`,
+                      : `${appInstanceArn}/user/${channel?.recipient.username}`,
                   channelArn: channel.summary.ChannelArn,
                 } as DeleteAppointmentFunctionEvent),
               ),
@@ -231,7 +231,7 @@ export default function WaitingRoom({ number = 1 }): JSX.Element {
             >
               <div className="AppointmentList__nameContainer">
                 <div className="AppointmentList__name">
-                  {'Patient: ' + channel.patient.name}
+                  {'Patient: ' + channel.recipient.name}
                 </div>
               </div>
               <div className="AppointmentList__buttonContainer">
@@ -295,10 +295,10 @@ export default function WaitingRoom({ number = 1 }): JSX.Element {
             </button>
           </>
         )}
-        <CallView
+        {/* <CallView
           number={number}
           isCaller={accountType === AccountType.Patient}
-        />
+        /> */}
         <div className="AppointmentList__listContainer">
           {createList(channels)}
         </div>

@@ -17,8 +17,8 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import MeetingDoctorView from '../components/MeetingDoctorView2';
-import MeetingPatientView from '../components/MeetingPatientView2';
+import MeetingCallerView from '../components/MeetingCallerView';
+import MeetingRecipientView from '../components/MeetingRecipientView';
 import { MeetingInviteStatus, ReservedMessageContent } from '../constants';
 import useMeetingFunctions from '../hooks/useMeetingFunctions';
 import useMountedRef from '../hooks/useMountedRef';
@@ -38,7 +38,7 @@ import {
 } from '../types/lambda';
 
 interface CallValue {
-  CallView: React.FC<{ number: number; isCaller: boolean }>;
+  CallView: React.FC<{ isCaller: boolean }>;
   createCall: (createCallInput: {
     caller: string;
     recipient: string;
@@ -104,8 +104,8 @@ export default function CallProvider({ children }: { children: ReactNode }) {
         if (data) {
           return {
             appointmentTimestamp: new Date(metadata.appointmentTimestamp),
-            doctor: metadata.doctor,
-            patient: metadata.patient,
+            caller: metadata.doctor,
+            recipient: metadata.patient,
             presenceMap: metadata.presenceMap,
             summary: data.Channel?.ChannelSummary,
             sfnExecutionArn: metadata.sfnExecutionArn,
@@ -136,7 +136,7 @@ export default function CallProvider({ children }: { children: ReactNode }) {
             const metadata = JSON.parse(payload.Metadata) as MessageMetadata;
             const senderUsername = payload.Sender.Arn.split('/user/')[1];
             if (
-              senderUsername === callChannel.patient.username &&
+              senderUsername === callChannel.recipient.username &&
               metadata.isMeetingInvitation &&
               metadata.meetingId === joinInfo.Meeting.MeetingId &&
               metadata.meetingId &&
@@ -382,26 +382,17 @@ export default function CallProvider({ children }: { children: ReactNode }) {
     [messagingClient, mountedRef],
   );
 
-  const CallView: React.FC<{ number: number; isCaller: boolean }> = (
-    callViewProps,
-    props,
-  ) => {
+  const CallView: React.FC<{ isCaller: boolean }> = (callViewProps, props) => {
     const value = React.useContext(CallContext);
 
     if (callChannel) {
       if (callViewProps.isCaller) {
         return (
-          <MeetingDoctorView
-            number={callViewProps.number}
-            channel={callChannel}
-            {...value}
-            {...props}
-          />
+          <MeetingCallerView channel={callChannel} {...value} {...props} />
         );
       } else {
         return (
-          <MeetingPatientView
-            number={callViewProps.number}
+          <MeetingRecipientView
             meetingId={meetingId}
             channel={callChannel}
             {...value}

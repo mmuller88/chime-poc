@@ -89,8 +89,8 @@ export default function AppointmentList(): JSX.Element {
               <div className="AppointmentList__nameContainer">
                 <div className="AppointmentList__name">
                   {accountType === AccountType.Doctor
-                    ? channel.patient.name
-                    : channel.doctor.name}
+                    ? channel.recipient.name
+                    : channel.caller.name}
                 </div>
                 <div className="AppointmentList__label">
                   {accountType === AccountType.Doctor
@@ -98,10 +98,11 @@ export default function AppointmentList(): JSX.Element {
                     : t('AppointmentList.doctor')}
                   {accountType === AccountType.Doctor
                     ? getPresenceLabel(
-                        channel.presenceMap[channel.patient.username].presence,
+                        channel.presenceMap[channel.recipient.username]
+                          .presence,
                       )
                     : getPresenceLabel(
-                        channel.presenceMap[channel.doctor.username].presence,
+                        channel.presenceMap[channel.caller.username].presence,
                       )}
                 </div>
               </div>

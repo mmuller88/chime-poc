@@ -54,7 +54,7 @@ export default function MeetingWidget({
     startMeeting();
     return () => {
       meetingManager?.leave();
-      onCleanUp();
+      // onCleanUp();
     };
   }, [meeting, attendee, meetingManager, mountedRef, onCleanUp]);
 
@@ -69,7 +69,7 @@ export default function MeetingWidget({
   const onClickLeave = async () => {
     await meetingManager.leave();
     setShowJoin(false);
-    onCleanUp();
+    // onCleanUp();
     await deleteCall();
   };
 

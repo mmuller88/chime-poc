@@ -76,8 +76,8 @@ export interface ChannelMember {
 
 export interface Channel {
   appointmentTimestamp: Date;
-  doctor: ChannelMember;
-  patient: ChannelMember;
+  caller: ChannelMember;
+  recipient: ChannelMember;
   presenceMap: {
     [username: string]: {
       presence: Presence;

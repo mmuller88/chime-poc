@@ -41,10 +41,10 @@ function App() {
                   \{' '}
                 </Widget>
                 <Widget title="Direct Call" number={2}>
-                  <DirectCall number={1} />
+                  <DirectCall />
                 </Widget>
                 <Widget title="Pickup Runner" number={3}>
-                  <PickupRunner number={2} />
+                  <PickupRunner />
                 </Widget>
                 <Widget title="Waiting Room" number={4}>
                   <MessagingProvider>
@@ -54,9 +54,9 @@ function App() {
                         AppointmentView: <AppointmentView />,
                         DirectCall: <DirectCall />,
                         CreateAppointment: <CreateAppointment />,
-                        WaitingRoom: <WaitingRoom number={3} />,
+                        WaitingRoom: <WaitingRoom />,
                       }}
-                      defaultRoute={<WaitingRoom number={3} />}
+                      defaultRoute={<WaitingRoom />}
                     />
                   </MessagingProvider>
                 </Widget>

@@ -18,7 +18,6 @@ import useMountedRef from '../hooks/useMountedRef';
 import { useRuntime } from '../providers/RuntimeProvider';
 
 import { Message, MessagingSessionObserver } from 'amazon-chime-sdk-js';
-import { AccountType } from '../constants';
 import { useCall } from '../providers/CallProvider';
 import { useMessaging } from '../providers/MessagingProvider';
 
@@ -26,11 +25,11 @@ import { useMessaging } from '../providers/MessagingProvider';
 // const RETRIES = 1;
 // let timeoutId: ReturnType<typeof setTimeout>;
 
-export default function DirectCall({ number = 1 }): JSX.Element {
+export default function DirectCall(): JSX.Element {
   // const { setRoute } = useRoute();
   const { patientUserPoolGroupName, cognitoUserPoolId } = useRuntime();
   const { cognitoClient, lambdaClient } = useAwsClient();
-  const { user, accountType } = useAuth();
+  const { user } = useAuth();
   const [patients, setPatients] = useState<CognitoUser[]>([]);
   const [selectedPatientUsername, setSelectedPatientUsername] =
     useState<string>('');
@@ -38,7 +37,7 @@ export default function DirectCall({ number = 1 }): JSX.Element {
   const mountedRef = useMountedRef();
   const { t } = useTranslation();
   const { messagingSession } = useMessaging();
-  const { createCall, CallView } = useCall();
+  const { createCall } = useCall();
 
   useEffect(() => {
     (async () => {
@@ -194,10 +193,10 @@ export default function DirectCall({ number = 1 }): JSX.Element {
       {
         <>
           {/* {channel && <Chat channel={channel} />} */}
-          <CallView
+          {/* <CallView
             number={number}
             isCaller={accountType === AccountType.Doctor}
-          />
+          /> */}
           {/*
           {meetingId && channel && (
             // We must pass the meeting ID as a key because MeetingPatientView does not support the case when
