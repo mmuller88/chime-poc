@@ -39,7 +39,7 @@ export default function useMeetingFunctions(): MeetingAPI {
             LogType: 'None',
             Payload: new TextEncoder().encode(
               JSON.stringify({
-                appInstanceUserId: channel.doctor.username,
+                appInstanceUserId: channel.caller.username,
                 channelArn: channel.summary.ChannelArn,
                 mediaRegion: nearestRegion,
               } as CreateMeetingFunctionEvent),
@@ -77,7 +77,7 @@ export default function useMeetingFunctions(): MeetingAPI {
             LogType: LogType.None,
             Payload: new TextEncoder().encode(
               JSON.stringify({
-                appInstanceUserId: channel.patient.username,
+                appInstanceUserId: channel.recipient.username,
                 channelArn: channel.summary.ChannelArn,
                 meetingId,
               } as CreateAttendeeFunctionEvent),

@@ -111,7 +111,7 @@ export default function MeetingPatientView({
       className="MeetingPatientView__window"
       isPortal
       title={t('MeetingPatientView.title', {
-        name: channel.doctor.name,
+        name: channel.caller.name,
       })}
     >
       <div className="MeetingPatientView">
@@ -121,7 +121,7 @@ export default function MeetingPatientView({
               <Trans
                 i18nKey={'MeetingPatientView.received'}
                 values={{
-                  name: channel.doctor.name,
+                  name: channel.caller.name,
                 }}
               />
             </p>
@@ -145,7 +145,7 @@ export default function MeetingPatientView({
               <Trans
                 i18nKey={'MeetingPatientView.starting'}
                 values={{
-                  name: channel.doctor.name,
+                  name: channel.caller.name,
                 }}
               />
             </p>
@@ -157,7 +157,7 @@ export default function MeetingPatientView({
               attendee={joinInfo.Attendee}
               meeting={joinInfo.Meeting}
               onCleanUp={onCleanUp}
-              remoteAttendeeName={channel.doctor.name}
+              remoteAttendeeName={channel.caller.name}
             />
           </MeetingProvider>
         )}

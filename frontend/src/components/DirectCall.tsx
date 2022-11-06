@@ -18,10 +18,8 @@ import useMountedRef from '../hooks/useMountedRef';
 import { useRuntime } from '../providers/RuntimeProvider';
 
 import { Message, MessagingSessionObserver } from 'amazon-chime-sdk-js';
-import { AccountType } from '../constants';
 import { useCall } from '../providers/CallProvider';
 import { useMessaging } from '../providers/MessagingProvider';
-import MeetingDoctorView from './MeetingDoctorView2';
 
 // const REFRESH_INTERVAL = 1000;
 // const RETRIES = 1;
@@ -31,7 +29,7 @@ export default function DirectCall(): JSX.Element {
   // const { setRoute } = useRoute();
   const { patientUserPoolGroupName, cognitoUserPoolId } = useRuntime();
   const { cognitoClient, lambdaClient } = useAwsClient();
-  const { user, accountType } = useAuth();
+  const { user } = useAuth();
   const [patients, setPatients] = useState<CognitoUser[]>([]);
   const [selectedPatientUsername, setSelectedPatientUsername] =
     useState<string>('');
@@ -39,7 +37,7 @@ export default function DirectCall(): JSX.Element {
   const mountedRef = useMountedRef();
   const { t } = useTranslation();
   const { messagingSession } = useMessaging();
-  const { createCall, callChannel } = useCall();
+  const { createCall } = useCall();
 
   useEffect(() => {
     (async () => {
@@ -109,8 +107,8 @@ export default function DirectCall(): JSX.Element {
     }
 
     await createCall({
-      doctorUsername: user.username!,
-      patientUsername: patient.username,
+      caller: user.username!,
+      recipient: patient.username,
     });
 
     setLoading(false);
@@ -135,13 +133,13 @@ export default function DirectCall(): JSX.Element {
     return () => {
       messagingSession?.removeObserver(observer);
     };
-  }, [lambdaClient, patients, selectedPatientUsername, user, callChannel]);
+  }, [lambdaClient, patients, selectedPatientUsername, user]);
 
-  const onCleanUpDoctor = useCallback(async () => {
-    console.log('onCleanUpDoctor');
+  // const onCleanUpDoctor = useCallback(async () => {
+  //   console.log('onCleanUpDoctor');
 
-    // await deleteCall();
-  }, [callChannel]);
+  //   // await deleteCall();
+  // }, [callChannel]);
 
   // const onCleanUpPatient = useCallback(() => {
   //   if (meetingId) {
@@ -191,17 +189,14 @@ export default function DirectCall(): JSX.Element {
         >
           {t('AppointmentView.call')}
         </button>
-        callChannel {callChannel ? '' : "doesn't"} exist.
       </form>
       {
         <>
           {/* {channel && <Chat channel={channel} />} */}
-          {accountType === AccountType.Doctor && callChannel && (
-            <MeetingDoctorView
-              channel={callChannel}
-              onCleanUp={onCleanUpDoctor}
-            />
-          )}
+          {/* <CallView
+            number={number}
+            isCaller={accountType === AccountType.Doctor}
+          /> */}
           {/*
           {meetingId && channel && (
             // We must pass the meeting ID as a key because MeetingPatientView does not support the case when

@@ -62,7 +62,7 @@ export default function MeetingDoctorView({ channel, onCleanUp }: Props) {
             const metadata = JSON.parse(payload.Metadata) as MessageMetadata;
             const senderUsername = payload.Sender.Arn.split('/user/')[1];
             if (
-              senderUsername === channel.patient.username &&
+              senderUsername === channel.recipient.username &&
               metadata.isMeetingInvitation &&
               metadata.meetingId === joinInfo.Meeting.MeetingId
             ) {
@@ -87,7 +87,7 @@ export default function MeetingDoctorView({ channel, onCleanUp }: Props) {
     joinInfo,
     messagingSession,
     user.username,
-    channel.patient.username,
+    channel.recipient.username,
   ]);
 
   useEffect(() => {
@@ -219,8 +219,8 @@ export default function MeetingDoctorView({ channel, onCleanUp }: Props) {
               JSON.stringify({
                 channelArn,
                 clientId,
-                doctorUsername: channel.doctor.username,
-                patientUsername: channel.patient.username,
+                doctorUsername: channel.caller.username,
+                patientUsername: channel.recipient.username,
                 meetingId: joinInfo.Meeting.MeetingId,
               } as MakeOutboundCallFunctionEvent),
             ),
@@ -231,8 +231,8 @@ export default function MeetingDoctorView({ channel, onCleanUp }: Props) {
       }
     }
   }, [
-    channel.doctor.username,
-    channel.patient.username,
+    channel.caller.username,
+    channel.recipient.username,
     channelArn,
     clientId,
     joinInfo,
@@ -249,7 +249,7 @@ export default function MeetingDoctorView({ channel, onCleanUp }: Props) {
       className="MeetingDoctorView__window"
       isPortal
       title={t('MeetingDoctorView.title', {
-        name: channel.patient.name,
+        name: channel.recipient.name,
       })}
     >
       <div className="MeetingDoctorView">
@@ -257,7 +257,7 @@ export default function MeetingDoctorView({ channel, onCleanUp }: Props) {
           <div className="MeetingDoctorView__progressUpdateContainer">
             <p>
               {t('MeetingDoctorView.declined', {
-                name: channel.patient.name,
+                name: channel.recipient.name,
               })}
             </p>
           </div>
@@ -268,7 +268,7 @@ export default function MeetingDoctorView({ channel, onCleanUp }: Props) {
               <p className="MeetingDoctorView__waiting">
                 <Trans
                   i18nKey={'MeetingDoctorView.waiting'}
-                  values={{ name: channel.patient.name }}
+                  values={{ name: channel.recipient.name }}
                 />
               </p>
               <button
@@ -300,7 +300,7 @@ export default function MeetingDoctorView({ channel, onCleanUp }: Props) {
               attendee={joinInfo.Attendee}
               meeting={joinInfo.Meeting}
               onCleanUp={onCleanUp}
-              remoteAttendeeName={channel.patient.name}
+              remoteAttendeeName={channel.recipient.name}
             />
           </MeetingProvider>
         )}

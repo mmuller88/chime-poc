@@ -17,6 +17,8 @@ import React, {
   useRef,
   useState,
 } from 'react';
+import MeetingCallerView from '../components/MeetingCallerView';
+import MeetingRecipientView from '../components/MeetingRecipientView';
 import { MeetingInviteStatus, ReservedMessageContent } from '../constants';
 import useMeetingFunctions from '../hooks/useMeetingFunctions';
 import useMountedRef from '../hooks/useMountedRef';
@@ -36,9 +38,10 @@ import {
 } from '../types/lambda';
 
 interface CallValue {
+  CallView: React.FC<{ isCaller: boolean }>;
   createCall: (createCallInput: {
-    doctorUsername: string;
-    patientUsername: string;
+    caller: string;
+    recipient: string;
   }) => Promise<void>;
   callChannel: Channel | undefined;
   deleteCall: () => Promise<void>;
@@ -101,8 +104,8 @@ export default function CallProvider({ children }: { children: ReactNode }) {
         if (data) {
           return {
             appointmentTimestamp: new Date(metadata.appointmentTimestamp),
-            doctor: metadata.doctor,
-            patient: metadata.patient,
+            caller: metadata.doctor,
+            recipient: metadata.patient,
             presenceMap: metadata.presenceMap,
             summary: data.Channel?.ChannelSummary,
             sfnExecutionArn: metadata.sfnExecutionArn,
@@ -133,7 +136,7 @@ export default function CallProvider({ children }: { children: ReactNode }) {
             const metadata = JSON.parse(payload.Metadata) as MessageMetadata;
             const senderUsername = payload.Sender.Arn.split('/user/')[1];
             if (
-              senderUsername === callChannel.patient.username &&
+              senderUsername === callChannel.recipient.username &&
               metadata.isMeetingInvitation &&
               metadata.meetingId === joinInfo.Meeting.MeetingId &&
               metadata.meetingId &&
@@ -300,7 +303,7 @@ export default function CallProvider({ children }: { children: ReactNode }) {
   }, [callChannel, messagingSession, clientId, accountType]);
 
   const createCall = useCallback(
-    async ({ doctorUsername, patientUsername }) => {
+    async ({ caller, recipient }) => {
       const data = await lambdaClient.send(
         new InvokeCommand({
           FunctionName: createAppointmentFunctionArn,
@@ -308,8 +311,8 @@ export default function CallProvider({ children }: { children: ReactNode }) {
           LogType: LogType.None,
           Payload: new TextEncoder().encode(
             JSON.stringify({
-              doctorUsername: doctorUsername,
-              patientUsername: patientUsername,
+              doctorUsername: caller,
+              patientUsername: recipient,
               timestamp: dayjs(Date.now())
                 .second(0)
                 .millisecond(0)
@@ -379,7 +382,30 @@ export default function CallProvider({ children }: { children: ReactNode }) {
     [messagingClient, mountedRef],
   );
 
+  const CallView: React.FC<{ isCaller: boolean }> = (callViewProps, props) => {
+    const value = React.useContext(CallContext);
+
+    if (callChannel) {
+      if (callViewProps.isCaller) {
+        return (
+          <MeetingCallerView channel={callChannel} {...value} {...props} />
+        );
+      } else {
+        return (
+          <MeetingRecipientView
+            meetingId={meetingId}
+            channel={callChannel}
+            {...value}
+            {...props}
+          />
+        );
+      }
+    }
+    return <div />;
+  };
+
   const value: CallValue = {
+    CallView,
     createCall,
     callChannel,
     deleteCall,

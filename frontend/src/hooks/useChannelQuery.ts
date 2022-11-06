@@ -82,8 +82,8 @@ export default function useChannelQuery() {
                 );
                 return {
                   appointmentTimestamp: new Date(metadata.appointmentTimestamp),
-                  doctor: metadata.doctor,
-                  patient: metadata.patient,
+                  caller: metadata.doctor,
+                  recipient: metadata.patient,
                   presenceMap: metadata.presenceMap,
                   summary: channel.ChannelSummary,
                   sfnExecutionArn: metadata.sfnExecutionArn,
@@ -124,8 +124,8 @@ export default function useChannelQuery() {
         if (data) {
           return {
             appointmentTimestamp: new Date(metadata.appointmentTimestamp),
-            doctor: metadata.doctor,
-            patient: metadata.patient,
+            caller: metadata.doctor,
+            recipient: metadata.patient,
             presenceMap: metadata.presenceMap,
             summary: data.Channel?.ChannelSummary,
             sfnExecutionArn: metadata.sfnExecutionArn,
@@ -296,7 +296,7 @@ export default function useChannelQuery() {
             const metadata = JSON.parse(payload.Metadata) as MessageMetadata;
             const senderUsername = payload.Sender.Arn.split('/user/')[1];
             if (
-              senderUsername === callChannel.patient.username &&
+              senderUsername === callChannel.recipient.username &&
               metadata.isMeetingInvitation &&
               metadata.meetingId === joinInfo.Meeting.MeetingId
             ) {

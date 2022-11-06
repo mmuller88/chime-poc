@@ -59,8 +59,8 @@ export default function ChatInput({
         placeholder={t('ChatInput.message', {
           recipient:
             accountType === AccountType.Doctor
-              ? channel.patient.name
-              : channel.doctor?.name ?? 'Unknown',
+              ? channel.recipient.name
+              : channel.caller?.name ?? 'Unknown',
         })}
         value={value}
         rows={1}
