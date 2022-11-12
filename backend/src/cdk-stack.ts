@@ -1,13 +1,18 @@
+import * as appsyncAlpha from '@aws-cdk/aws-appsync-alpha';
 import * as cdk from 'aws-cdk-lib';
+import * as ssm from 'aws-cdk-lib/aws-ssm';
+
+import { AppSyncTransformer } from 'cdk-appsync-transformer';
+
 import { Construct } from 'constructs';
 
-import { Appointment } from './appointment';
-import { Cognito } from './cognito';
-import { Distribution } from './distribution';
-import { Meeting } from './meeting';
-import { Messaging } from './messaging';
-import { Notification } from './notification';
-import { PSTN } from './pstn';
+import { Appointment } from './constructs/appointment';
+import { Cognito } from './constructs/cognito';
+import { Distribution } from './constructs/distribution';
+import { Meeting } from './constructs/meeting';
+import { Messaging } from './constructs/messaging';
+import { Notification } from './constructs/notification';
+import { PSTN } from './constructs/pstn';
 
 export class CdkStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
@@ -37,9 +42,39 @@ export class CdkStack extends cdk.Stack {
       cognitoUserPoolId: cognito.cognitoUserPoolId,
     });
 
+    const api = new AppSyncTransformer(this, 'Api', {
+      schemaPath: 'src/schema.graphql',
+      authorizationConfig: {
+        defaultAuthorization: {
+          authorizationType: appsyncAlpha.AuthorizationType.IAM,
+        },
+        additionalAuthorizationModes: [
+          // {
+          //   authorizationType: appsyncAlpha.AuthorizationType.API_KEY,
+          //   apiKeyConfig: {
+          //     expires: core.Expiration.after(core.Duration.days(365)),
+          //   },
+          // },
+          {
+            authorizationType: appsyncAlpha.AuthorizationType.USER_POOL,
+            userPoolConfig: {
+              userPool: cognito.userPool,
+              defaultAction: appsyncAlpha.UserPoolDefaultAction.ALLOW,
+            },
+          },
+        ],
+      },
+    });
+
+    const graphqlUrl = new ssm.StringParameter(this, 'GraphqlUrl', {
+      parameterName: 'GraphqlUrl',
+      stringValue: api.appsyncAPI.graphqlUrl,
+    });
+
     // Create output values at the stack level to have an output name without prefix and postfix.
     // e.g., "AppInstanceArn" instead of "MessagingAppInstanceArn13E661EB" (construct + output + hash)
     const output = {
+      GraphQLUrl: graphqlUrl.stringValue,
       AppInstanceArn: messaging.appInstanceArn,
       ChannelFlowArn: messaging.channelFlowArn,
       CognitoIdentityPoolId: cognito.cognitoIdentityPoolId,

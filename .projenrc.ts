@@ -44,7 +44,8 @@ project.setScript(
   'curl https://d3oyzoc11xndeg.cloudfront.net/runtime-config.json > frontend/public/runtime-config.json && cd frontend && yarn start',
 );
 
-project.setScript('destroy', 'cd backend && destroy');
+project.setScript('destroy', 'cd backend && yarn destroy');
+project.setScript('codegen', 'cd frontend && yarn codegen');
 
 project.package.addField('lint-staged', {
   '*.(ts|tsx)': ['eslint --fix'],
@@ -63,6 +64,25 @@ const backend = new pj.awscdk.AwsCdkTypeScriptApp({
   parent: project,
   name: 'backend',
   cdkVersion,
+  deps: [
+    'cdk-appsync-transformer@2.0.0-alpha.0',
+    'appsync-client',
+    `@aws-cdk/aws-appsync-alpha@${cdkVersion}-alpha.0`,
+  ],
+  devDeps: [
+    // '@types/fs-extra',
+    // '@types/lodash',
+    '@types/aws-lambda',
+    // ...[
+    //   'amplify-graphql-docs-generator',
+    //   '@graphql-codegen/cli',
+    //   '@graphql-codegen/typescript',
+    //   '@graphql-codegen/typescript-operations',
+    //   '@graphql-codegen/typescript-react-query',
+    //   '@graphql-codegen/typed-document-node',
+    // ],
+  ],
+  gitignore: ['appsync', './schema.graphql'],
   // release: true,
   tsconfig: {
     compilerOptions: {
@@ -76,7 +96,17 @@ backend.setScript('tsc', 'tsc');
 backend.setScript('destroy', 'cdk destroy');
 backend.setScript('postinstall', 'cd lambda && yarn install');
 backend.setScript('deploy:no-approval', 'cdk deploy --require-approval never');
-
 backend.setScript('buildReactApps', 'cd ../frontend && yarn build');
+
+// backend.addTask('copy-schema', {
+//   exec: 'cp ./appsync/schema.graphql ./schema.graphql',
+// });
+// backend.addTask('generate-statements', {
+//   exec: 'node bin/generateStatements.js',
+// });
+// backend.addTask('codegen', {
+//   description: 'Generates frontend GraphQL wrapper API code',
+//   exec: 'yarn synth && yarn run copy-schema && yarn run generate-statements && graphql-codegen --config codegen.yml && rm schema.graphql',
+// });
 
 backend.synth();

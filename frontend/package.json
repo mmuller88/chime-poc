@@ -6,6 +6,13 @@
     "@svgr/webpack": "$@svgr/webpack"
   },
   "dependencies": {
+    "@graphql-codegen/cli": "^2.13.11",
+    "@graphql-codegen/typed-document-node": "^2.3.6",
+    "@graphql-codegen/typescript": "^2.8.1",
+    "@graphql-codegen/typescript-operations": "^2.5.6",
+    "@graphql-codegen/typescript-react-query": "^4.0.5",
+    "@tanstack/react-query": "^4.0.10",
+    "amplify-graphql-docs-generator": "^2.2.4",
     "@aws-amplify/auth": "^4.4.1",
     "@aws-amplify/core": "^4.3.14",
     "@aws-amplify/storage": "^4.4.15",
@@ -46,7 +53,10 @@
     "build:widget": "rm -rf widget-dist && parcel build src/index.tsx --no-source-maps --log-level warn --dist-dir widget-dist",
     "build": "react-scripts build",
     "deploy": "npm run build:widget && npx ts-node --project scripts/tsconfig.json scripts/deploy.ts",
-    "start": "GENERATE_SOURCEMAP=false react-scripts start"
+    "start": "GENERATE_SOURCEMAP=false react-scripts start",
+    "copy-schema": "cp ./../backend/appsync/schema.graphql ./schema.graphql",
+    "generate-statements": "node bin/generateStatements.js",
+    "codegen": "cd ../backend && yarn synth && cd ../frontend && yarn run copy-schema && yarn run generate-statements && graphql-codegen --config codegen.yml && rm schema.graphql"
   },
   "resolutions": {
     "@types/react": "17.0.2",
