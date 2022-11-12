@@ -35,27 +35,16 @@ export type Scalars = {
 };
 
 export type CreateTranslationMessageInput = {
+  createdAt?: InputMaybe<Scalars['AWSDateTime']>;
   id?: InputMaybe<Scalars['ID']>;
-  interpreter: InterpreterInput;
-  sortKey: Scalars['String'];
+  operator: OperatorInput;
+  translationQueue: TranslationQueue;
   username: Scalars['String'];
 };
 
 export type DeleteTranslationMessageInput = {
-  id: Scalars['ID'];
-};
-
-export type Interpreter = {
-  __typename?: 'Interpreter';
-  email?: Maybe<Scalars['String']>;
-  name?: Maybe<Scalars['String']>;
-  phone?: Maybe<Scalars['String']>;
-};
-
-export type InterpreterInput = {
-  email?: InputMaybe<Scalars['String']>;
-  name?: InputMaybe<Scalars['String']>;
-  phone?: InputMaybe<Scalars['String']>;
+  createdAt: Scalars['AWSDateTime'];
+  translationQueue: TranslationQueue;
 };
 
 export type ModelBooleanFilterInput = {
@@ -114,6 +103,16 @@ export type ModelStringFilterInput = {
   notContains?: InputMaybe<Scalars['String']>;
 };
 
+export type ModelStringKeyConditionInput = {
+  beginsWith?: InputMaybe<Scalars['String']>;
+  between?: InputMaybe<Array<InputMaybe<Scalars['String']>>>;
+  eq?: InputMaybe<Scalars['String']>;
+  ge?: InputMaybe<Scalars['String']>;
+  gt?: InputMaybe<Scalars['String']>;
+  le?: InputMaybe<Scalars['String']>;
+  lt?: InputMaybe<Scalars['String']>;
+};
+
 export type ModelTranslationMessageConnection = {
   __typename?: 'ModelTranslationMessageConnection';
   items?: Maybe<Array<Maybe<TranslationMessage>>>;
@@ -122,11 +121,17 @@ export type ModelTranslationMessageConnection = {
 
 export type ModelTranslationMessageFilterInput = {
   and?: InputMaybe<Array<InputMaybe<ModelTranslationMessageFilterInput>>>;
+  createdAt?: InputMaybe<ModelStringFilterInput>;
   id?: InputMaybe<ModelIdFilterInput>;
   not?: InputMaybe<ModelTranslationMessageFilterInput>;
   or?: InputMaybe<Array<InputMaybe<ModelTranslationMessageFilterInput>>>;
-  sortKey?: InputMaybe<ModelStringFilterInput>;
+  translationQueue?: InputMaybe<ModelTranslationQueueFilterInput>;
   username?: InputMaybe<ModelStringFilterInput>;
+};
+
+export type ModelTranslationQueueFilterInput = {
+  eq?: InputMaybe<TranslationQueue>;
+  ne?: InputMaybe<TranslationQueue>;
 };
 
 export type Mutation = {
@@ -148,6 +153,19 @@ export type MutationUpdateTranslationMessageArgs = {
   input: UpdateTranslationMessageInput;
 };
 
+export type Operator = {
+  __typename?: 'Operator';
+  email?: Maybe<Scalars['String']>;
+  name?: Maybe<Scalars['String']>;
+  phone?: Maybe<Scalars['String']>;
+};
+
+export type OperatorInput = {
+  email?: InputMaybe<Scalars['String']>;
+  name?: InputMaybe<Scalars['String']>;
+  phone?: InputMaybe<Scalars['String']>;
+};
+
 export type Query = {
   __typename?: 'Query';
   getTranslationMessage?: Maybe<TranslationMessage>;
@@ -155,13 +173,17 @@ export type Query = {
 };
 
 export type QueryGetTranslationMessageArgs = {
-  id: Scalars['ID'];
+  createdAt: Scalars['AWSDateTime'];
+  translationQueue: TranslationQueue;
 };
 
 export type QueryListTranslationMessagesArgs = {
+  createdAt?: InputMaybe<ModelStringKeyConditionInput>;
   filter?: InputMaybe<ModelTranslationMessageFilterInput>;
   limit?: InputMaybe<Scalars['Int']>;
   nextToken?: InputMaybe<Scalars['String']>;
+  sortDirection?: InputMaybe<ModelSortDirection>;
+  translationQueue?: InputMaybe<TranslationQueue>;
 };
 
 export type Subscription = {
@@ -187,8 +209,8 @@ export type TranslationMessage = {
   __typename?: 'TranslationMessage';
   createdAt: Scalars['AWSDateTime'];
   id: Scalars['ID'];
-  interpreter: Interpreter;
-  sortKey: Scalars['String'];
+  operator: Operator;
+  translationQueue: TranslationQueue;
   updatedAt: Scalars['AWSDateTime'];
   username: Scalars['String'];
 };
@@ -199,9 +221,10 @@ export enum TranslationQueue {
 }
 
 export type UpdateTranslationMessageInput = {
-  id: Scalars['ID'];
-  interpreter?: InputMaybe<InterpreterInput>;
-  sortKey?: InputMaybe<Scalars['String']>;
+  createdAt: Scalars['AWSDateTime'];
+  id?: InputMaybe<Scalars['ID']>;
+  operator?: InputMaybe<OperatorInput>;
+  translationQueue: TranslationQueue;
   username?: InputMaybe<Scalars['String']>;
 };
 
@@ -209,14 +232,14 @@ export const CreateTranslationMessageDocument = `
     mutation CreateTranslationMessage($input: CreateTranslationMessageInput!) {
   createTranslationMessage(input: $input) {
     id
-    sortKey
-    interpreter {
+    translationQueue
+    createdAt
+    operator {
       name
       email
       phone
     }
     username
-    createdAt
     updatedAt
   }
 }
@@ -250,14 +273,14 @@ export const UpdateTranslationMessageDocument = `
     mutation UpdateTranslationMessage($input: UpdateTranslationMessageInput!) {
   updateTranslationMessage(input: $input) {
     id
-    sortKey
-    interpreter {
+    translationQueue
+    createdAt
+    operator {
       name
       email
       phone
     }
     username
-    createdAt
     updatedAt
   }
 }
@@ -291,14 +314,14 @@ export const DeleteTranslationMessageDocument = `
     mutation DeleteTranslationMessage($input: DeleteTranslationMessageInput!) {
   deleteTranslationMessage(input: $input) {
     id
-    sortKey
-    interpreter {
+    translationQueue
+    createdAt
+    operator {
       name
       email
       phone
     }
     username
-    createdAt
     updatedAt
   }
 }
@@ -329,17 +352,20 @@ export const useDeleteTranslationMessageMutation = <
     options,
   );
 export const GetTranslationMessageDocument = `
-    query GetTranslationMessage($id: ID!) {
-  getTranslationMessage(id: $id) {
+    query GetTranslationMessage($translationQueue: TranslationQueue!, $createdAt: AWSDateTime!) {
+  getTranslationMessage(
+    translationQueue: $translationQueue
+    createdAt: $createdAt
+  ) {
     id
-    sortKey
-    interpreter {
+    translationQueue
+    createdAt
+    operator {
       name
       email
       phone
     }
     username
-    createdAt
     updatedAt
   }
 }
@@ -360,18 +386,25 @@ export const useGetTranslationMessageQuery = <
     options,
   );
 export const ListTranslationMessagesDocument = `
-    query ListTranslationMessages($filter: ModelTranslationMessageFilterInput, $limit: Int, $nextToken: String) {
-  listTranslationMessages(filter: $filter, limit: $limit, nextToken: $nextToken) {
+    query ListTranslationMessages($translationQueue: TranslationQueue, $createdAt: ModelStringKeyConditionInput, $filter: ModelTranslationMessageFilterInput, $limit: Int, $nextToken: String, $sortDirection: ModelSortDirection) {
+  listTranslationMessages(
+    translationQueue: $translationQueue
+    createdAt: $createdAt
+    filter: $filter
+    limit: $limit
+    nextToken: $nextToken
+    sortDirection: $sortDirection
+  ) {
     items {
       id
-      sortKey
-      interpreter {
+      translationQueue
+      createdAt
+      operator {
         name
         email
         phone
       }
       username
-      createdAt
       updatedAt
     }
     nextToken
@@ -399,14 +432,14 @@ export const OnCreateTranslationMessageDocument = `
     subscription OnCreateTranslationMessage($username: String) {
   onCreateTranslationMessage(username: $username) {
     id
-    sortKey
-    interpreter {
+    translationQueue
+    createdAt
+    operator {
       name
       email
       phone
     }
     username
-    createdAt
     updatedAt
   }
 }
@@ -415,14 +448,14 @@ export const OnUpdateTranslationMessageDocument = `
     subscription OnUpdateTranslationMessage($username: String) {
   onUpdateTranslationMessage(username: $username) {
     id
-    sortKey
-    interpreter {
+    translationQueue
+    createdAt
+    operator {
       name
       email
       phone
     }
     username
-    createdAt
     updatedAt
   }
 }
@@ -431,14 +464,14 @@ export const OnDeleteTranslationMessageDocument = `
     subscription OnDeleteTranslationMessage($username: String) {
   onDeleteTranslationMessage(username: $username) {
     id
-    sortKey
-    interpreter {
+    translationQueue
+    createdAt
+    operator {
       name
       email
       phone
     }
     username
-    createdAt
     updatedAt
   }
 }
@@ -453,12 +486,12 @@ export type CreateTranslationMessageMutation = {
     | {
         __typename?: 'TranslationMessage';
         id: string;
-        sortKey: string;
-        username: string;
+        translationQueue: TranslationQueue;
         createdAt: string;
+        username: string;
         updatedAt: string;
-        interpreter: {
-          __typename?: 'Interpreter';
+        operator: {
+          __typename?: 'Operator';
           name?: string | null | undefined;
           email?: string | null | undefined;
           phone?: string | null | undefined;
@@ -478,12 +511,12 @@ export type UpdateTranslationMessageMutation = {
     | {
         __typename?: 'TranslationMessage';
         id: string;
-        sortKey: string;
-        username: string;
+        translationQueue: TranslationQueue;
         createdAt: string;
+        username: string;
         updatedAt: string;
-        interpreter: {
-          __typename?: 'Interpreter';
+        operator: {
+          __typename?: 'Operator';
           name?: string | null | undefined;
           email?: string | null | undefined;
           phone?: string | null | undefined;
@@ -503,12 +536,12 @@ export type DeleteTranslationMessageMutation = {
     | {
         __typename?: 'TranslationMessage';
         id: string;
-        sortKey: string;
-        username: string;
+        translationQueue: TranslationQueue;
         createdAt: string;
+        username: string;
         updatedAt: string;
-        interpreter: {
-          __typename?: 'Interpreter';
+        operator: {
+          __typename?: 'Operator';
           name?: string | null | undefined;
           email?: string | null | undefined;
           phone?: string | null | undefined;
@@ -519,7 +552,8 @@ export type DeleteTranslationMessageMutation = {
 };
 
 export type GetTranslationMessageQueryVariables = Exact<{
-  id: Scalars['ID'];
+  translationQueue: TranslationQueue;
+  createdAt: Scalars['AWSDateTime'];
 }>;
 
 export type GetTranslationMessageQuery = {
@@ -528,12 +562,12 @@ export type GetTranslationMessageQuery = {
     | {
         __typename?: 'TranslationMessage';
         id: string;
-        sortKey: string;
-        username: string;
+        translationQueue: TranslationQueue;
         createdAt: string;
+        username: string;
         updatedAt: string;
-        interpreter: {
-          __typename?: 'Interpreter';
+        operator: {
+          __typename?: 'Operator';
           name?: string | null | undefined;
           email?: string | null | undefined;
           phone?: string | null | undefined;
@@ -544,9 +578,12 @@ export type GetTranslationMessageQuery = {
 };
 
 export type ListTranslationMessagesQueryVariables = Exact<{
+  translationQueue?: InputMaybe<TranslationQueue>;
+  createdAt?: InputMaybe<ModelStringKeyConditionInput>;
   filter?: InputMaybe<ModelTranslationMessageFilterInput>;
   limit?: InputMaybe<Scalars['Int']>;
   nextToken?: InputMaybe<Scalars['String']>;
+  sortDirection?: InputMaybe<ModelSortDirection>;
 }>;
 
 export type ListTranslationMessagesQuery = {
@@ -560,12 +597,12 @@ export type ListTranslationMessagesQuery = {
               | {
                   __typename?: 'TranslationMessage';
                   id: string;
-                  sortKey: string;
-                  username: string;
+                  translationQueue: TranslationQueue;
                   createdAt: string;
+                  username: string;
                   updatedAt: string;
-                  interpreter: {
-                    __typename?: 'Interpreter';
+                  operator: {
+                    __typename?: 'Operator';
                     name?: string | null | undefined;
                     email?: string | null | undefined;
                     phone?: string | null | undefined;
@@ -591,12 +628,12 @@ export type OnCreateTranslationMessageSubscription = {
     | {
         __typename?: 'TranslationMessage';
         id: string;
-        sortKey: string;
-        username: string;
+        translationQueue: TranslationQueue;
         createdAt: string;
+        username: string;
         updatedAt: string;
-        interpreter: {
-          __typename?: 'Interpreter';
+        operator: {
+          __typename?: 'Operator';
           name?: string | null | undefined;
           email?: string | null | undefined;
           phone?: string | null | undefined;
@@ -616,12 +653,12 @@ export type OnUpdateTranslationMessageSubscription = {
     | {
         __typename?: 'TranslationMessage';
         id: string;
-        sortKey: string;
-        username: string;
+        translationQueue: TranslationQueue;
         createdAt: string;
+        username: string;
         updatedAt: string;
-        interpreter: {
-          __typename?: 'Interpreter';
+        operator: {
+          __typename?: 'Operator';
           name?: string | null | undefined;
           email?: string | null | undefined;
           phone?: string | null | undefined;
@@ -641,12 +678,12 @@ export type OnDeleteTranslationMessageSubscription = {
     | {
         __typename?: 'TranslationMessage';
         id: string;
-        sortKey: string;
-        username: string;
+        translationQueue: TranslationQueue;
         createdAt: string;
+        username: string;
         updatedAt: string;
-        interpreter: {
-          __typename?: 'Interpreter';
+        operator: {
+          __typename?: 'Operator';
           name?: string | null | undefined;
           email?: string | null | undefined;
           phone?: string | null | undefined;

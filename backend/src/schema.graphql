@@ -4,7 +4,7 @@
 
 type TranslationMessage
   @model
-  @key(fields: ["id", "sortKey"])
+  @key(fields: ["translationQueue", "createdAt"])
   @auth(
     rules: [
       { allow: private, provider: iam }
@@ -15,9 +15,11 @@ type TranslationMessage
   ) {
   id: ID!
   # TranslationQueue#timestamp
-  sortKey: String!
+  # sortKey: String!
+  translationQueue: TranslationQueue!
+  createdAt: AWSDateTime!
   # Cognito username of the interpreter
-  interpreter: Interpreter!
+  operator: Operator!
   username: String!
 }
 
@@ -26,7 +28,7 @@ enum TranslationQueue {
   EngPt
 }
 
-type Interpreter {
+type Operator {
   name: String
   email: String
   phone: String

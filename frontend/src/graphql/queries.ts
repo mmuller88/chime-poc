@@ -3,42 +3,54 @@
 // this is an auto generated file. This will be overwritten
 
 export const getTranslationMessage = /* GraphQL */ `
-  query GetTranslationMessage($id: ID!) {
-    getTranslationMessage(id: $id) {
+  query GetTranslationMessage(
+    $translationQueue: TranslationQueue!
+    $createdAt: AWSDateTime!
+  ) {
+    getTranslationMessage(
+      translationQueue: $translationQueue
+      createdAt: $createdAt
+    ) {
       id
-      sortKey
-      interpreter {
+      translationQueue
+      createdAt
+      operator {
         name
         email
         phone
       }
       username
-      createdAt
       updatedAt
     }
   }
 `;
 export const listTranslationMessages = /* GraphQL */ `
   query ListTranslationMessages(
+    $translationQueue: TranslationQueue
+    $createdAt: ModelStringKeyConditionInput
     $filter: ModelTranslationMessageFilterInput
     $limit: Int
     $nextToken: String
+    $sortDirection: ModelSortDirection
   ) {
     listTranslationMessages(
+      translationQueue: $translationQueue
+      createdAt: $createdAt
       filter: $filter
       limit: $limit
       nextToken: $nextToken
+      sortDirection: $sortDirection
     ) {
       items {
         id
-        sortKey
-        interpreter {
+        translationQueue
+        createdAt
+        operator {
           name
           email
           phone
         }
         username
-        createdAt
         updatedAt
       }
       nextToken

@@ -20,13 +20,18 @@ import {
 
 export default function WaitingRoomOperatorView(): JSX.Element {
   const { user, appInstanceUserArn, accountType } = useAuth();
-  const [selectedTranslation, setSelectedTranslation] = useState<string>('');
+  const [selectedTranslation, setSelectedTranslation] = useState<
+    TranslationQueue | undefined
+  >(undefined);
 
   const { data, isLoading, refetch } = useListTranslationMessagesQuery(
     undefined,
     {
       refetchOnWindowFocus: false,
     },
+  );
+  data?.listTranslationMessages?.items?.sort(
+    (e1, e2) => Date.parse(e1?.createdAt!) - Date.parse(e2?.createdAt!),
   );
 
   // const updateMutation = useUpdateTranslationMessageMutation();
@@ -39,19 +44,19 @@ export default function WaitingRoomOperatorView(): JSX.Element {
     // setLoading(true);
     console.log('onClickWait');
 
-    if (!user.username) {
+    if (!user.username || !selectedTranslation) {
       return;
     }
 
     await createMutation.mutateAsync({
       input: {
         username: user.username,
-        interpreter: {
+        operator: {
           name: user.attributes?.name,
           email: user.attributes?.email,
           phone: user.attributes?.phone_number,
         },
-        sortKey: `${selectedTranslation}#${Date.now()}`,
+        translationQueue: selectedTranslation,
       },
     });
 
@@ -65,6 +70,7 @@ export default function WaitingRoomOperatorView(): JSX.Element {
   const onChangeTranslation = useCallback(
     (event) => {
       console.log('onChangeTranslation');
+      console.log(`value=${event.target.value}`);
       setSelectedTranslation(event.target.value);
       console.log(event.target.value);
     },
@@ -72,11 +78,18 @@ export default function WaitingRoomOperatorView(): JSX.Element {
   );
 
   const onClickLeave = useCallback(
-    (messageId: string) => {
+    ({
+      translationQueue,
+      createdAt,
+    }: {
+      translationQueue: TranslationQueue;
+      createdAt: string;
+    }) => {
       (async () => {
         await deleteMutation.mutateAsync({
           input: {
-            id: messageId,
+            translationQueue: translationQueue,
+            createdAt: createdAt,
           },
         });
         await refetch();
@@ -90,8 +103,9 @@ export default function WaitingRoomOperatorView(): JSX.Element {
   return (
     <div className="DirectCall">
       <div className="DirectCall__form">
-        {accountType === AccountType.Patient &&
-          data?.listTranslationMessages?.items?.length === 0 && (
+        {
+          accountType === AccountType.Patient && (
+            // data?.listTranslationMessages?.items?.length === 0 && (
             <>
               <button
                 className="AppointmentView__callButton"
@@ -133,7 +147,9 @@ export default function WaitingRoomOperatorView(): JSX.Element {
                 </div>
               </div>
             </>
-          )}
+          )
+          // )
+        }
         {accountType === AccountType.Doctor && (
           <>
             <button
@@ -157,14 +173,10 @@ export default function WaitingRoomOperatorView(): JSX.Element {
                 <li className="AppointmentList__listItem" key={message.id}>
                   <div className="AppointmentList__nameContainer">
                     <div className="AppointmentList__name">
-                      {'Translation: ' +
-                        message.sortKey.substring(
-                          0,
-                          message.sortKey.indexOf('#'),
-                        )}
+                      {'Translation: ' + message.translationQueue}
                     </div>
                     <div className="AppointmentList__name">
-                      {'Operator: ' + message.interpreter.name}
+                      {'Operator: ' + message.operator.name}
                     </div>
                     <div className="AppointmentList__dateTime">
                       <div className="AppointmentList__date">
@@ -190,7 +202,10 @@ export default function WaitingRoomOperatorView(): JSX.Element {
                     <button
                       className="AppointmentList__button"
                       onClick={() => {
-                        onClickLeave(message.id);
+                        onClickLeave({
+                          translationQueue: message.translationQueue,
+                          createdAt: message.createdAt,
+                        });
                       }}
                     >
                       Leave
