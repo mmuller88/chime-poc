@@ -1,6 +1,10 @@
 {
   "dependencies": [
     {
+      "name": "@types/aws-lambda",
+      "type": "build"
+    },
+    {
       "name": "@types/jest",
       "type": "build"
     },
@@ -90,8 +94,22 @@
       "type": "override"
     },
     {
+      "name": "@aws-cdk/aws-appsync-alpha",
+      "version": "2.50.0-alpha.0",
+      "type": "runtime"
+    },
+    {
+      "name": "appsync-client",
+      "type": "runtime"
+    },
+    {
       "name": "aws-cdk-lib",
       "version": "^2.50.0",
+      "type": "runtime"
+    },
+    {
+      "name": "cdk-appsync-transformer",
+      "version": "2.0.0-alpha.0",
       "type": "runtime"
     },
     {

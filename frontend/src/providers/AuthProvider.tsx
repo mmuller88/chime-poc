@@ -7,6 +7,7 @@ import React, { ReactNode, useContext, useEffect, useState } from 'react';
 
 import SignInSignUp from '../components/SignInSignUp';
 import { AccountType } from '../constants';
+import { API } from '../lib/fetcher';
 import { useRuntime } from './RuntimeProvider';
 
 interface AuthValue {
@@ -42,16 +43,37 @@ export default function AuthProvider({
     getIdToken: Provider<string>;
   }>();
 
+  const runtimeContext = useRuntime();
+
   const {
     region,
     cognitoUserPoolId,
     cognitoUserPoolClientId,
     cognitoIdentityPoolId,
     appInstanceArn,
-  } = useRuntime();
+    graphQLUrl,
+  } = runtimeContext;
 
   useEffect(() => {
+    console.debug('AuthProvider');
+    console.debug({
+      region,
+      cognitoUserPoolId,
+      cognitoUserPoolClientId,
+      cognitoIdentityPoolId,
+      appInstanceArn,
+      graphQLUrl,
+    });
+
     Amplify.configure({
+      aws_project_region: region,
+      aws_cognito_identity_pool_id: cognitoIdentityPoolId,
+      aws_cognito_region: region,
+      aws_user_pools_id: cognitoUserPoolId,
+      aws_user_pools_web_client_id: cognitoUserPoolClientId,
+      aws_appsync_graphqlEndpoint: graphQLUrl,
+      aws_appsync_region: region,
+      aws_appsync_authenticationType: 'AMAZON_COGNITO_USER_POOLS',
       Auth: {
         identityPoolId: cognitoIdentityPoolId, // Config.CognitoIdentityPoolId,
         region: region, // Config.Region,
@@ -60,9 +82,10 @@ export default function AuthProvider({
         userPoolWebClientId: cognitoUserPoolClientId, // Config.CognitoUserPoolClientId,
       },
     });
-  }, []);
+  }, [runtimeContext]);
 
   useEffect(() => {
+    console.debug('AuthProvider authenticated');
     if (route === 'authenticated') {
       (async () => {
         setCredentials({
@@ -80,6 +103,7 @@ export default function AuthProvider({
   }, [route]);
 
   if (route === 'authenticated' && credentials) {
+    API.updateIsSignedIn(true);
     const value: AuthValue = {
       accountType: user.attributes?.['custom:accountType'] as AccountType,
       appInstanceUserArn: `${appInstanceArn}/user/${user.username}`,
@@ -92,6 +116,7 @@ export default function AuthProvider({
       <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
     );
   } else {
+    API.updateIsSignedIn(false);
     return <SignInSignUp />;
   }
 }

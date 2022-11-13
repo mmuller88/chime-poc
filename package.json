@@ -22,7 +22,8 @@
     "install-all": "cd backend && yarn install && cd ../frontend && yarn install",
     "deploy": "yarn install-all && cd frontend && yarn build && cd ../backend && yarn deploy:no-approval ",
     "dev": "curl https://d3oyzoc11xndeg.cloudfront.net/runtime-config.json > frontend/public/runtime-config.json && cd frontend && yarn start",
-    "destroy": "cd backend && destroy",
+    "destroy": "cd backend && yarn destroy",
+    "codegen": "cd frontend && yarn codegen",
     "lint:staged": "lint-staged"
   },
   "devDependencies": {

@@ -1,6 +1,7 @@
 import React, { ReactNode, useContext, useEffect, useState } from 'react';
 
 interface RuntimeValue {
+  graphQLUrl: string;
   region: string;
   appInstanceArn: string;
   cognitoUserPoolId: string;
@@ -34,6 +35,7 @@ export default function RuntimeProvider({
   const [runtimeContext, setRuntimeContext] = useState<any>(undefined);
 
   useEffect(() => {
+    // console.debug('feth runtime');
     fetch('/runtime-config.json')
       .then((response) => {
         return response.json();
@@ -41,6 +43,7 @@ export default function RuntimeProvider({
       .then((runtimeCtx) => {
         const cleanRuntimeContext = Object.values(runtimeCtx)[0] as any;
         if (
+          cleanRuntimeContext.GraphQLUrl &&
           cleanRuntimeContext.Region &&
           cleanRuntimeContext.AppInstanceArn &&
           cleanRuntimeContext.CognitoUserPoolId &&
@@ -55,6 +58,7 @@ export default function RuntimeProvider({
           cleanRuntimeContext.PatientUserPoolGroupName &&
           cleanRuntimeContext.CreateAppointmentFunctionArn
         ) {
+          console.debug('setRuntimeContext');
           setRuntimeContext(cleanRuntimeContext);
         } else {
           console.warn('runtime-config.json misses property');
@@ -68,6 +72,7 @@ export default function RuntimeProvider({
 
   if (runtimeContext) {
     const value: RuntimeValue = {
+      graphQLUrl: runtimeContext.GraphQLUrl,
       region: runtimeContext.Region,
       appInstanceArn: runtimeContext.AppInstanceArn,
       cognitoUserPoolId: runtimeContext.CognitoUserPoolId,

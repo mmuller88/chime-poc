@@ -29,6 +29,8 @@ jspm_packages/
 *.tgz
 .yarn-integrity
 .cache
+appsync
+./schema.graphql
 !/.projenrc.js
 /test-reports/
 junit.xml

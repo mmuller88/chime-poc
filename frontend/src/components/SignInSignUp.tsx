@@ -1,6 +1,6 @@
-import { useRef } from 'react';
 import { Auth } from '@aws-amplify/auth';
-import { Authenticator, RadioGroupField, Radio } from '@aws-amplify/ui-react';
+import { Authenticator, Radio, RadioGroupField } from '@aws-amplify/ui-react';
+import { useRef } from 'react';
 // import '@aws-amplify/ui-react/styles.css';
 import './SignInSignUp.css';
 
@@ -53,4 +53,4 @@ export default function SignInSignUp(): JSX.Element {
       signUpAttributes={['email', 'name', 'phone_number']}
     />
   );
-};
+}

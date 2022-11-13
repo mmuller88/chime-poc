@@ -1,0 +1,35 @@
+# input AMPLIFY {
+#   globalAuthRule: AuthRule = { allow: public }
+# }
+
+type TranslationMessage
+  @model
+  @key(fields: ["translationQueue", "createdAt"])
+  @auth(
+    rules: [
+      { allow: private, provider: iam }
+      { allow: owner, ownerField: "username" }
+      { allow: groups, groups: ["DoctorUserPoolGroup"] }
+      { allow: public }
+    ]
+  ) {
+  id: ID!
+  # TranslationQueue#timestamp
+  # sortKey: String!
+  translationQueue: TranslationQueue!
+  createdAt: AWSDateTime!
+  # Cognito username of the interpreter
+  operator: Operator!
+  username: String!
+}
+
+enum TranslationQueue {
+  EngGer
+  EngPt
+}
+
+type Operator {
+  name: String
+  email: String
+  phone: String
+}

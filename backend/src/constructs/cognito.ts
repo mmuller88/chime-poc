@@ -17,25 +17,26 @@ export class Cognito extends Construct {
   readonly cognitoUserPoolId: string;
   readonly cognitoUserPoolClientId: string;
   readonly cognitoIdentityPoolId: string;
+  userPool;
 
   constructor(scope: Construct, id: string, private props: CognitoProps) {
     super(scope, id);
     const handler = this.createHandler();
-    const userPool = this.createUserPool(handler);
-    this.cognitoUserPoolId = userPool.userPoolId;
+    this.userPool = this.createUserPool(handler);
+    this.cognitoUserPoolId = this.userPool.userPoolId;
 
-    const userPoolClient = this.createUserPoolClient(userPool);
+    const userPoolClient = this.createUserPoolClient(this.userPool);
     this.cognitoUserPoolClientId = userPoolClient.userPoolClientId;
 
-    const identityPool = this.createIdentityPool(userPool, userPoolClient);
+    const identityPool = this.createIdentityPool(this.userPool, userPoolClient);
     this.cognitoIdentityPoolId = identityPool.ref;
 
     // Create doctor and patient groups for authenticated Cognito users.
-    this.createUserPoolGroups(userPool, identityPool);
+    this.createUserPoolGroups(this.userPool, identityPool);
 
     // An authenticated Cognito user has either doctor or patient group role
     // to perform specified actions in the corresponding group role.
-    this.attachRoles(userPool, userPoolClient, identityPool);
+    this.attachRoles(this.userPool, userPoolClient, identityPool);
   }
 
   private createUserPool = (handler: lambda.Function): cognito.UserPool => {
