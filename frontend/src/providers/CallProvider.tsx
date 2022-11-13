@@ -290,6 +290,7 @@ export default function CallProvider({ children }: { children: ReactNode }) {
               clearTimeout(timeoudRef.current);
               setMeetingId(undefined);
               setCallChannel(undefined);
+              setMeetingInviteStatus(MeetingInviteStatus.Unknown);
               console.log('setMeetingId(undefined)');
             } catch (error: any) {}
           }

@@ -23,9 +23,12 @@ import {
   useListTranslationMessagesQuery,
 } from '../lib/api';
 import { API } from '../lib/fetcher';
+import { useAuth } from '../providers/AuthProvider';
+import { useCall } from '../providers/CallProvider';
 
 export default function WaitingRoomInterpreterView(): JSX.Element {
-  // const { user } = useAuth();
+  const { user } = useAuth();
+  const { createCall } = useCall();
 
   const engGerQueue = useListTranslationMessagesQuery(
     {
@@ -98,8 +101,9 @@ export default function WaitingRoomInterpreterView(): JSX.Element {
 
   dayjs.extend(localizedFormat);
 
-  const onClickCall = useCallback(() => {
+  const onClickCall = useCallback(async (operator: string) => {
     console.log('onClickCall');
+    await createCall({ caller: user.username!, recipient: operator });
   }, []);
 
   if (engGerQueue.isLoading || engPtQueue.isLoading)
@@ -150,7 +154,7 @@ export default function WaitingRoomInterpreterView(): JSX.Element {
                     <div className="AppointmentList__buttonContainer">
                       <button
                         className="AppointmentView__callButton"
-                        onClick={onClickCall}
+                        onClick={() => onClickCall(message.username)}
                       >
                         Call
                       </button>
