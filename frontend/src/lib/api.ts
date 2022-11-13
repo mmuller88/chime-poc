@@ -34,10 +34,23 @@ export type Scalars = {
   Double: any;
 };
 
+export type Client = {
+  __typename?: 'Client';
+  email?: Maybe<Scalars['String']>;
+  name?: Maybe<Scalars['String']>;
+  phone?: Maybe<Scalars['String']>;
+};
+
+export type ClientInput = {
+  email?: InputMaybe<Scalars['String']>;
+  name?: InputMaybe<Scalars['String']>;
+  phone?: InputMaybe<Scalars['String']>;
+};
+
 export type CreateTranslationMessageInput = {
+  client: ClientInput;
   createdAt?: InputMaybe<Scalars['AWSDateTime']>;
   id?: InputMaybe<Scalars['ID']>;
-  operator: OperatorInput;
   translationQueue: TranslationQueue;
   username: Scalars['String'];
 };
@@ -153,19 +166,6 @@ export type MutationUpdateTranslationMessageArgs = {
   input: UpdateTranslationMessageInput;
 };
 
-export type Operator = {
-  __typename?: 'Operator';
-  email?: Maybe<Scalars['String']>;
-  name?: Maybe<Scalars['String']>;
-  phone?: Maybe<Scalars['String']>;
-};
-
-export type OperatorInput = {
-  email?: InputMaybe<Scalars['String']>;
-  name?: InputMaybe<Scalars['String']>;
-  phone?: InputMaybe<Scalars['String']>;
-};
-
 export type Query = {
   __typename?: 'Query';
   getTranslationMessage?: Maybe<TranslationMessage>;
@@ -207,9 +207,9 @@ export type SubscriptionOnUpdateTranslationMessageArgs = {
 
 export type TranslationMessage = {
   __typename?: 'TranslationMessage';
+  client: Client;
   createdAt: Scalars['AWSDateTime'];
   id: Scalars['ID'];
-  operator: Operator;
   translationQueue: TranslationQueue;
   updatedAt: Scalars['AWSDateTime'];
   username: Scalars['String'];
@@ -221,9 +221,9 @@ export enum TranslationQueue {
 }
 
 export type UpdateTranslationMessageInput = {
+  client?: InputMaybe<ClientInput>;
   createdAt: Scalars['AWSDateTime'];
   id?: InputMaybe<Scalars['ID']>;
-  operator?: InputMaybe<OperatorInput>;
   translationQueue: TranslationQueue;
   username?: InputMaybe<Scalars['String']>;
 };
@@ -234,7 +234,7 @@ export const CreateTranslationMessageDocument = `
     id
     translationQueue
     createdAt
-    operator {
+    client {
       name
       email
       phone
@@ -275,7 +275,7 @@ export const UpdateTranslationMessageDocument = `
     id
     translationQueue
     createdAt
-    operator {
+    client {
       name
       email
       phone
@@ -316,7 +316,7 @@ export const DeleteTranslationMessageDocument = `
     id
     translationQueue
     createdAt
-    operator {
+    client {
       name
       email
       phone
@@ -360,7 +360,7 @@ export const GetTranslationMessageDocument = `
     id
     translationQueue
     createdAt
-    operator {
+    client {
       name
       email
       phone
@@ -399,7 +399,7 @@ export const ListTranslationMessagesDocument = `
       id
       translationQueue
       createdAt
-      operator {
+      client {
         name
         email
         phone
@@ -434,7 +434,7 @@ export const OnCreateTranslationMessageDocument = `
     id
     translationQueue
     createdAt
-    operator {
+    client {
       name
       email
       phone
@@ -450,7 +450,7 @@ export const OnUpdateTranslationMessageDocument = `
     id
     translationQueue
     createdAt
-    operator {
+    client {
       name
       email
       phone
@@ -466,7 +466,7 @@ export const OnDeleteTranslationMessageDocument = `
     id
     translationQueue
     createdAt
-    operator {
+    client {
       name
       email
       phone
@@ -490,8 +490,8 @@ export type CreateTranslationMessageMutation = {
         createdAt: string;
         username: string;
         updatedAt: string;
-        operator: {
-          __typename?: 'Operator';
+        client: {
+          __typename?: 'Client';
           name?: string | null | undefined;
           email?: string | null | undefined;
           phone?: string | null | undefined;
@@ -515,8 +515,8 @@ export type UpdateTranslationMessageMutation = {
         createdAt: string;
         username: string;
         updatedAt: string;
-        operator: {
-          __typename?: 'Operator';
+        client: {
+          __typename?: 'Client';
           name?: string | null | undefined;
           email?: string | null | undefined;
           phone?: string | null | undefined;
@@ -540,8 +540,8 @@ export type DeleteTranslationMessageMutation = {
         createdAt: string;
         username: string;
         updatedAt: string;
-        operator: {
-          __typename?: 'Operator';
+        client: {
+          __typename?: 'Client';
           name?: string | null | undefined;
           email?: string | null | undefined;
           phone?: string | null | undefined;
@@ -566,8 +566,8 @@ export type GetTranslationMessageQuery = {
         createdAt: string;
         username: string;
         updatedAt: string;
-        operator: {
-          __typename?: 'Operator';
+        client: {
+          __typename?: 'Client';
           name?: string | null | undefined;
           email?: string | null | undefined;
           phone?: string | null | undefined;
@@ -601,8 +601,8 @@ export type ListTranslationMessagesQuery = {
                   createdAt: string;
                   username: string;
                   updatedAt: string;
-                  operator: {
-                    __typename?: 'Operator';
+                  client: {
+                    __typename?: 'Client';
                     name?: string | null | undefined;
                     email?: string | null | undefined;
                     phone?: string | null | undefined;
@@ -632,8 +632,8 @@ export type OnCreateTranslationMessageSubscription = {
         createdAt: string;
         username: string;
         updatedAt: string;
-        operator: {
-          __typename?: 'Operator';
+        client: {
+          __typename?: 'Client';
           name?: string | null | undefined;
           email?: string | null | undefined;
           phone?: string | null | undefined;
@@ -657,8 +657,8 @@ export type OnUpdateTranslationMessageSubscription = {
         createdAt: string;
         username: string;
         updatedAt: string;
-        operator: {
-          __typename?: 'Operator';
+        client: {
+          __typename?: 'Client';
           name?: string | null | undefined;
           email?: string | null | undefined;
           phone?: string | null | undefined;
@@ -682,8 +682,8 @@ export type OnDeleteTranslationMessageSubscription = {
         createdAt: string;
         username: string;
         updatedAt: string;
-        operator: {
-          __typename?: 'Operator';
+        client: {
+          __typename?: 'Client';
           name?: string | null | undefined;
           email?: string | null | undefined;
           phone?: string | null | undefined;

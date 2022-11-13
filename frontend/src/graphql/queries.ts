@@ -14,7 +14,7 @@ export const getTranslationMessage = /* GraphQL */ `
       id
       translationQueue
       createdAt
-      operator {
+      client {
         name
         email
         phone
@@ -45,7 +45,7 @@ export const listTranslationMessages = /* GraphQL */ `
         id
         translationQueue
         createdAt
-        operator {
+        client {
           name
           email
           phone

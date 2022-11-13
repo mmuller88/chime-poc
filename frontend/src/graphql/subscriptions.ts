@@ -8,7 +8,7 @@ export const onCreateTranslationMessage = /* GraphQL */ `
       id
       translationQueue
       createdAt
-      operator {
+      client {
         name
         email
         phone
@@ -24,7 +24,7 @@ export const onUpdateTranslationMessage = /* GraphQL */ `
       id
       translationQueue
       createdAt
-      operator {
+      client {
         name
         email
         phone
@@ -40,7 +40,7 @@ export const onDeleteTranslationMessage = /* GraphQL */ `
       id
       translationQueue
       createdAt
-      operator {
+      client {
         name
         email
         phone

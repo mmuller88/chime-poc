@@ -19,7 +19,7 @@ type TranslationMessage
   translationQueue: TranslationQueue!
   createdAt: AWSDateTime!
   # Cognito username of the interpreter
-  operator: Operator!
+  client: Client!
   username: String!
 }
 
@@ -28,7 +28,7 @@ enum TranslationQueue {
   EngPt
 }
 
-type Operator {
+type Client {
   name: String
   email: String
   phone: String

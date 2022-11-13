@@ -2,12 +2,6 @@ import { useCallback, useEffect } from 'react';
 import 'react-datepicker/dist/react-datepicker.css';
 import Observable from 'zen-observable';
 
-// import { useAuth } from '../providers/AuthProvider';
-// import { useAwsClient } from '../providers/AwsClientProvider';
-import './DirectCall.css';
-
-// import Config from '../utils/Config';
-
 import dayjs from 'dayjs';
 import localizedFormat from 'dayjs/plugin/localizedFormat';
 import { t } from 'i18next';
@@ -101,9 +95,9 @@ export default function WaitingRoomInterpreterView(): JSX.Element {
 
   dayjs.extend(localizedFormat);
 
-  const onClickCall = useCallback(async (operator: string) => {
+  const onClickCall = useCallback(async (client: string) => {
     console.log('onClickCall');
-    await createCall({ caller: user.username!, recipient: operator });
+    await createCall({ caller: user.username!, recipient: client });
   }, []);
 
   if (engGerQueue.isLoading || engPtQueue.isLoading)
@@ -115,25 +109,27 @@ export default function WaitingRoomInterpreterView(): JSX.Element {
         { name: 'English Germany Queue', queue: engGerQueue },
         { name: 'English Portuguese Queue', queue: engPtQueue },
       ].map((translationQueue) => (
-        <div className="AppointmentList__listContainer">
+        <div className="flex overflow-y-scroll flex-col flex-[1_0_0%] pb-4">
           {translationQueue.name}
-          <ul className="AppointmentList__list">
+          <ul className="">
             {translationQueue.queue.data?.listTranslationMessages?.items?.map(
               (message) =>
                 !message ? (
                   <></>
                 ) : (
-                  <li className="AppointmentList__listItem" key={message.id}>
-                    <div className="AppointmentList__nameContainer">
-                      <div className="AppointmentList__name">
+                  <li
+                    className="bg-white border-2 rounded m-4 p-4 ease-linear duration-75 shadow-[0_4px_12px_rgb(141,153,155,0.2)]"
+                    key={message.id}
+                  >
+                    <div className="">
+                      <div className="">
                         {'Translation: ' + message.translationQueue}
                       </div>
-                      <div className="AppointmentList__name">
-                        {'Operator: ' + message.operator.name}
-                      </div>
-                      <div className="AppointmentList__dateTime">
-                        <div className="AppointmentList__date">
-                          <span className="AppointmentList__icon">{'📅'}</span>
+                      <div className="">{'Client: ' + message.client.name}</div>
+
+                      <div className="flex pt-4 border-t-2 ">
+                        <div className="flex-[1_1_55%]">
+                          <span className="mr-2">{'📅'}</span>
                           <span>
                             {dayjs(message.createdAt).calendar(null, {
                               sameDay: t('AppointmentList.dayJsSameDayFormat'),
@@ -145,15 +141,15 @@ export default function WaitingRoomInterpreterView(): JSX.Element {
                             })}
                           </span>
                         </div>
-                        <div className="AppointmentList__time">
-                          <span className="AppointmentList__icon">{'🕑'}</span>
+                        <div className="flex-[1_1_45%]">
+                          <span className="mr-2">{'🕑'}</span>
                           <span>{dayjs(message.createdAt).format('LT')}</span>
                         </div>
                       </div>
                     </div>
-                    <div className="AppointmentList__buttonContainer">
+                    <div className="mt-2">
                       <button
-                        className="AppointmentView__callButton"
+                        className=" text-primary"
                         onClick={() => onClickCall(message.username)}
                       >
                         Call

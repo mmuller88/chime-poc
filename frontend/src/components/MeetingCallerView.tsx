@@ -121,7 +121,7 @@ export default function MeetingCallerView({ channel }: Props) {
   return (
     <Window
       className="MeetingCallerView__window"
-      isPortal
+      // isPortal
       title={t('MeetingCallerView.title', {
         name: channel.recipient.name,
       })}

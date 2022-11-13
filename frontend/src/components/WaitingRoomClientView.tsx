@@ -18,7 +18,7 @@ import {
   useListTranslationMessagesQuery,
 } from '../lib/api';
 
-export default function WaitingRoomOperatorView(): JSX.Element {
+export default function WaitingRoomClientView(): JSX.Element {
   const { user, appInstanceUserArn, accountType } = useAuth();
   const [selectedTranslation, setSelectedTranslation] = useState<
     TranslationQueue | undefined
@@ -51,7 +51,7 @@ export default function WaitingRoomOperatorView(): JSX.Element {
     await createMutation.mutateAsync({
       input: {
         username: user.username,
-        operator: {
+        client: {
           name: user.attributes?.name,
           email: user.attributes?.email,
           phone: user.attributes?.phone_number,
@@ -164,23 +164,25 @@ export default function WaitingRoomOperatorView(): JSX.Element {
           number={number}
           isCaller={accountType === AccountType.Patient}
         /> */}
-        <div className="AppointmentList__listContainer">
-          <ul className="AppointmentList__list">
+        <div className="flex overflow-y-scroll flex-col flex-[1_0_0%] pb-4">
+          <ul className="">
             {data?.listTranslationMessages?.items?.map((message) =>
               !message ? (
                 <></>
               ) : (
-                <li className="AppointmentList__listItem" key={message.id}>
-                  <div className="AppointmentList__nameContainer">
-                    <div className="AppointmentList__name">
+                <li
+                  className="bg-white border-2 rounded m-4 p-4 ease-linear duration-75 shadow-[0_4px_12px_rgb(141,153,155,0.2)]"
+                  key={message.id}
+                >
+                  {' '}
+                  <div className="">
+                    <div className="">
                       {'Translation: ' + message.translationQueue}
                     </div>
-                    <div className="AppointmentList__name">
-                      {'Operator: ' + message.operator.name}
-                    </div>
-                    <div className="AppointmentList__dateTime">
-                      <div className="AppointmentList__date">
-                        <span className="AppointmentList__icon">{'📅'}</span>
+                    <div className="">{'Client: ' + message.client.name}</div>
+                    <div className="flex pt-4 border-t-2 ">
+                      <div className="flex-[1_1_55%]">
+                        <span className="mr-2">{'📅'}</span>
                         <span>
                           {dayjs(message.createdAt).calendar(null, {
                             sameDay: t('AppointmentList.dayJsSameDayFormat'),
@@ -192,15 +194,15 @@ export default function WaitingRoomOperatorView(): JSX.Element {
                           })}
                         </span>
                       </div>
-                      <div className="AppointmentList__time">
-                        <span className="AppointmentList__icon">{'🕑'}</span>
+                      <div className="flex-[1_1_45%]">
+                        <span className="mr-2">{'🕑'}</span>
                         <span>{dayjs(message.createdAt).format('LT')}</span>
                       </div>
                     </div>
                   </div>
-                  <div className="AppointmentList__buttonContainer">
+                  <div className="mt-2">
                     <button
-                      className="AppointmentList__button"
+                      className=" text-primary"
                       onClick={() => {
                         onClickLeave({
                           translationQueue: message.translationQueue,
